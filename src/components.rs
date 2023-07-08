@@ -59,3 +59,43 @@ pub fn AccordionItem(
                 .child(dropdown_content.classes("accordion-body")),
         )
 }
+
+pub fn Tab(cx: Scope, id: &str, active: bool, text: &str) -> HtmlElement<Li> {
+    let mut button = button(cx)
+        .classes("nav-link")
+        .id(id.to_string())
+        .attr("data-bs-toggle", "tab")
+        .attr("data-bs-target", format!("#{}-pane", id.to_string()))
+        .attr("type", "button")
+        .attr("role", "tab")
+        .attr("aria-controls", format!("{}-pane", id.to_string()))
+        .attr("aria-selected", "true")
+        .child(text.to_string());
+    if active {
+        button = button.classes("active");
+    }
+    li(cx)
+        .classes("nav-item")
+        .attr("role", "presentation")
+        .child(button)
+}
+
+pub fn TabPanel(
+    cx: Scope,
+    id: &str,
+    active: bool,
+    child: HtmlElement<Div>,
+) -> HtmlElement<Div> {
+    let classes = if active {
+        "tab-pane fade show active"
+    } else {
+        "tab-pane fade"
+    };
+    div(cx)
+        .classes(classes)
+        .id(format!("{}-pane", id.to_string()))
+        .attr("role", "tabpanel")
+        .attr("aria-labelledby", id.to_string())
+        .attr("tabindex", "0")
+        .child(child)
+}

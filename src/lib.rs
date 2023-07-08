@@ -4,7 +4,9 @@ use crate::character_model::CharacterDetails;
 use crate::components::*;
 use crate::dnd_api::{ClassesAPI, SpeciesAPI};
 use comrak::{markdown_to_html, ComrakOptions};
-use dnd_api::{Class, Feature, Species, Subspecies};
+use dnd_api::{
+    Background, BackgroundsAPI, Class, Feature, Species, Subspecies,
+};
 
 use leptos::{component, create_local_resource, IntoView, Scope};
 use leptos::{ev, html::*, *};
@@ -60,6 +62,31 @@ async fn fetch_classes(_: ()) -> Vec<Class> {
     }
 }
 
+/// Fetch list of background options from Open5e
+async fn fetch_backgrounds(_: ()) -> Vec<Background> {
+    let res =
+        reqwasm::http::Request::get("https://api.open5e.com/v1/backgrounds/")
+            .send()
+            .await;
+    match res {
+        Ok(response) => match response.json::<BackgroundsAPI>().await {
+            Ok(api) => api.results,
+            // Handle deserialization error condition
+            Err(e) => {
+                leptos::log!("Could not deserialize data from Open5e to the BackgroundAPI struct!");
+                leptos::log!("{}", e);
+                vec![]
+            }
+        },
+        // If our request errors, return an empty list
+        Err(e) => {
+            leptos::log!("Error fetching background data from Open5e!");
+            leptos::log!("{}", e);
+            vec![]
+        }
+    }
+}
+
 const CHAR_STORAGE_KEY: &str = "character_sheet_character";
 
 fn get_character() -> CharacterDetails {
@@ -82,11 +109,15 @@ pub fn App(cx: Scope) -> impl IntoView {
     //let (name, set_name) = create_signal(cx, String::new());
     let character = create_rw_signal(cx, get_character());
 
+    // Update local storage whenever the character details change
     create_effect(cx, move |_| {
+        // Make sure we can actually correctly access local storage
         if let Some(window) = web_sys::window() {
             if let Ok(Some(local_storage)) = window.local_storage() {
                 character.with(|char| {
+                    // Serialize the character to json
                     if let Ok(json) = serde_json::to_string(char) {
+                        // Store the json
                         let _ = local_storage.set_item(CHAR_STORAGE_KEY, &json);
                     }
                 })
@@ -109,60 +140,49 @@ pub fn App(cx: Scope) -> impl IntoView {
 
     let species_future = create_local_resource(cx, || (), fetch_species);
     let class_future = create_local_resource(cx, || (), fetch_classes);
+    let backgrounds_future =
+        create_local_resource(cx, || (), fetch_backgrounds);
+
+    let class_tab = ClassDisplay(
+        cx,
+        class_future,
+        create_read_slice(cx, character, |c| c.class.clone()),
+        create_read_slice(cx, character, CharacterDetails::level),
+    );
+    let species_tab = div(cx).child(move || {
+        species_future.with(cx, |species_list| {
+            species_list
+                .iter()
+                .find(|s| s.slug == species.get())
+                .map(|s| {
+                    SpeciesDisplay(cx, s.clone(), subspecies, set_subspecies)
+                })
+        })
+    });
+
+    let features_panel = ScrollableContainerBox(cx)
+        .child(h1(cx).child("Features:"))
+        .child(FeaturePanel(cx, class_tab, species_tab));
 
     // Render the page
     vec![
-        Header(cx, character, species_future, class_future),
+        Header(
+            cx,
+            character,
+            species_future,
+            class_future,
+            backgrounds_future,
+        ),
         div(cx)
             .attr("class", "container")
             // Left column
             .child(
                 GridRow(cx)
-                    .child(GridCol(cx).child("One"))
+                    .child(GridCol(cx).child("Column One"))
                     // Center column
-                    .child(GridCol(cx).child("Two"))
+                    .child(GridCol(cx).child("Column Two"))
                     // Right column
-                    .child(
-                        GridCol(cx).child(
-                            ScrollableContainerBox(cx)
-                                .child(h1(cx).child("Features:"))
-                                .child(FeaturePanel(
-                                    cx,
-                                    ClassDisplay(
-                                        cx,
-                                        class_future,
-                                        create_read_slice(cx, character, |c| {
-                                            c.class.clone()
-                                        }),
-                                        create_read_slice(
-                                            cx,
-                                            character,
-                                            CharacterDetails::level,
-                                        ),
-                                    ),
-                                    div(cx).child(move || {
-                                        species_future.with(
-                                            cx,
-                                            |species_list| {
-                                                species_list
-                                                    .iter()
-                                                    .find(|s| {
-                                                        s.slug == species.get()
-                                                    })
-                                                    .map(|s| {
-                                                        SpeciesDisplay(
-                                                            cx,
-                                                            s.clone(),
-                                                            subspecies,
-                                                            set_subspecies,
-                                                        )
-                                                    })
-                                            },
-                                        )
-                                    }),
-                                )),
-                        ),
-                    ),
+                    .child(GridCol(cx).child(features_panel)),
             ),
     ]
 }
@@ -171,7 +191,8 @@ fn Header(
     cx: Scope,
     character: RwSignal<CharacterDetails>,
     species_future: Resource<(), Vec<Species>>,
-    class_future: Resource<(), Vec<crate::dnd_api::Class>>,
+    class_future: Resource<(), Vec<Class>>,
+    backgrounds_future: Resource<(), Vec<Background>>,
 ) -> HtmlElement<Div> {
     let (species, set_species) = create_slice(
         cx,
@@ -188,6 +209,12 @@ fn Header(
         character,
         |c| c.class.to_string(),
         |c, v| c.class = v,
+    );
+    let (background, set_background) = create_slice(
+        cx,
+        character,
+        |c| c.background.to_string(),
+        |c, v| c.background = v,
     );
 
     let (name, set_name) =
@@ -272,13 +299,14 @@ fn Header(
                                 ),
                         ),
                     )
-                    .child(GridRow(cx).child("Row 2")),
-            )
-            .child(
-                GridCol(cx)
-                    //.attr("class", "col-sm-3")
-                    .child(GridRow(cx).child("Row 1"))
-                    .child(GridRow(cx).child("Row 2")),
+                    .child(GridRow(cx).child(div(cx).child(
+                        BackgroundDropdown(
+                            cx,
+                            backgrounds_future,
+                            background,
+                            set_background,
+                        ),
+                    ))),
             ),
     )
 }
@@ -320,7 +348,7 @@ fn SpeciesOption(cx: Scope, species: &Species) -> HtmlElement<Option_> {
 
 fn ClassDropdown(
     cx: Scope,
-    future: Resource<(), Vec<crate::dnd_api::Class>>,
+    future: Resource<(), Vec<Class>>,
     class: Signal<String>,
     set_class: SignalSetter<String>,
 ) -> impl IntoView {
@@ -345,6 +373,35 @@ fn ClassDropdown(
         })
 }
 
+fn BackgroundDropdown(
+    cx: Scope,
+    future: Resource<(), Vec<Background>>,
+    background: Signal<String>,
+    set_background: SignalSetter<String>,
+) -> HtmlElement<Select> {
+    CustomSelect(cx)
+        .prop("value", background)
+        .on(ev::change, move |e| set_background(event_target_value(&e)))
+        .child(option(cx).child("Select a background...").prop("value", ""))
+        .child(move || {
+            future
+                .with(cx, |bg| {
+                    bg.iter()
+                        .map(|c| {
+                            option(cx)
+                                .prop("value", c.slug.clone())
+                                .prop("selected", c.slug == background.get())
+                                .child(format!(
+                                    "{} ({})",
+                                    c.name, c.document_title
+                                ))
+                        })
+                        .collect::<OptionList>()
+                })
+                .unwrap_or(vec![option(cx).child("Loading...")])
+        })
+}
+
 fn FeaturePanel(
     cx: Scope,
     class_tab: HtmlElement<Div>,
@@ -357,36 +414,8 @@ fn FeaturePanel(
                 .id("featuresTabs")
                 .attr("role", "tablist")
                 .child(vec![
-                    li(cx)
-                        .classes("nav-item")
-                        .attr("role", "presentation")
-                        .child(
-                            button(cx)
-                                .classes("nav-link active")
-                                .id("class-tab")
-                                .attr("data-bs-toggle", "tab")
-                                .attr("data-bs-target", "#class-tab-pane")
-                                .attr("type", "button")
-                                .attr("role", "tab")
-                                .attr("aria-controls", "class-tab-pane")
-                                .attr("aria-selected", "true")
-                                .child("Class"),
-                        ),
-                    li(cx)
-                        .classes("nav-item")
-                        .attr("role", "presentation")
-                        .child(
-                            button(cx)
-                                .classes("nav-link")
-                                .id("species-tab")
-                                .attr("data-bs-toggle", "tab")
-                                .attr("data-bs-target", "#species-tab-pane")
-                                .attr("type", "button")
-                                .attr("role", "tab")
-                                .attr("aria-controls", "species-tab-pane")
-                                .attr("aria-selected", "true")
-                                .child("Species"),
-                        ),
+                    Tab(cx, "class-tab", true, "Class"),
+                    Tab(cx, "species-tab", false, "Class"),
                 ]),
         )
         .child(
@@ -395,20 +424,8 @@ fn FeaturePanel(
                     .classes("tab-content")
                     .id("featuresTabsContent")
                     .child(vec![
-                        div(cx)
-                            .classes("tab-pane fade show active")
-                            .id("class-tab-pane")
-                            .attr("role", "tabpanel")
-                            .attr("aria-labelledby", "class-tab")
-                            .attr("tabindex", "0")
-                            .child(class_tab),
-                        div(cx)
-                            .classes("tab-pane fade")
-                            .id("species-tab-pane")
-                            .attr("role", "tabpanel")
-                            .attr("aria-labelledby", "species-tab")
-                            .attr("tabindex", "0")
-                            .child(species_tab),
+                        TabPanel(cx, "class-tab", true, class_tab),
+                        TabPanel(cx, "species-tab", false, species_tab),
                     ]),
             ),
         )
