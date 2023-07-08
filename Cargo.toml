@@ -1,0 +1,18 @@
+[package]
+name = "char_sheet_leptos"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+leptos = { version = "0.4.1", features = ["csr", "nightly"] }
+console_log = "1"
+log = "0.4"
+console_error_panic_hook = "0.1.7"
+serde = "1.0.164"
+serde_json = "1.0.99"
+reqwasm = "0.5.0"
+comrak = "0.18.0"
+regex_static = "0.1.1"
+
