@@ -1,0 +1,8 @@
+# https://rust-lang.github.io/rustfmt/?version=master&search=
+# Maximum width of each line.
+# Default: 100
+    max_width = 80 
+
+# Ideal width of each line.
+# Default: 80
+#  max_width = 80 

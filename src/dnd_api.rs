@@ -7,7 +7,7 @@ use serde_json::Value;
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SpeciesAPI {
-    pub count: i64,
+    pub count: i32,
     pub next: Value,
     pub previous: Value,
     pub results: Vec<Species>,
@@ -46,13 +46,13 @@ pub struct Species {
 #[serde(rename_all = "camelCase")]
 pub struct Asi {
     pub attributes: Vec<String>,
-    pub value: i64,
+    pub value: i32,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Speed {
-    pub walk: i64,
+    pub walk: i32,
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -116,7 +116,7 @@ pub struct Subspecies {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ClassesAPI {
-    pub count: i64,
+    pub count: i32,
     pub next: Value,
     pub previous: Value,
     pub results: Vec<Class>,
@@ -162,7 +162,7 @@ pub struct Class {
 }
 
 impl Class {
-    pub fn features(this: &Self) -> Vec<Feature> {
+    pub fn features(&self) -> Vec<Feature> {
         let patterns = vec![
             static_regex!(r"At ([0-9]{1,2})[a-zA-Z]{1,2} level"),
             static_regex!(r"When you reach ([0-9]{1,2})[a-zA-Z]{1,2} level"),
@@ -173,16 +173,17 @@ impl Class {
         ];
         let mut features: Vec<Feature> = vec![];
 
-        let desc = this.desc.replace("\n \n", "\n\n");
+        let desc = self.desc.replace("\n \n", "\n\n");
         let desc_parts = desc.split("\n\n").collect::<Vec<&str>>();
 
         let mut current_feature = Feature::default();
         for line in desc_parts {
             if line.len() > 3 && line[0..4].to_string() == "### ".to_string() {
-                if current_feature.level != 0 {
-                    features.push(current_feature)
+                if current_feature.name != "" {
+                    features.push(current_feature);
                 }
                 current_feature = Feature::default();
+                //current_feature.level = 1;
                 let title = line.replace("### ", "");
                 current_feature.name = title.trim().to_string();
             } else {
@@ -197,7 +198,7 @@ impl Class {
 
                             if current_feature.level != 0 {
                                 let new_feature = Feature {
-                                    level,
+                                    level: level,
                                     name: current_feature.name.clone(),
                                     desc: String::new(),
                                 };
@@ -214,8 +215,12 @@ impl Class {
                     current_feature.desc += "\n\n";
                 }
                 current_feature.desc += line.trim();
+                if current_feature.level == 0 {
+                    current_feature.level = 1;
+                }
             }
         }
+        features.push(current_feature);
         features.sort_by(|a, b| a.level.cmp(&b.level));
         features
     }
@@ -223,9 +228,9 @@ impl Class {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Feature {
-    name: String,
-    desc: String,
-    level: i32,
+    pub name: String,
+    pub desc: String,
+    pub level: i32,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -247,7 +252,7 @@ pub struct Archetype {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BackgroundsAPI {
-    pub count: i64,
+    pub count: i32,
     pub next: Value,
     pub previous: Value,
     pub results: Vec<Background>,
