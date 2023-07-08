@@ -6,10 +6,24 @@ use uuid::Uuid;
 } */
 
 pub fn GridRow(cx: Scope) -> HtmlElement<Div> {
+    div(cx).attr("class", "row")
+}
+pub fn GridRowMarginBottom(cx: Scope) -> HtmlElement<Div> {
     div(cx).attr("class", "row mb-2")
 }
 pub fn GridCol(cx: Scope) -> HtmlElement<Div> {
     div(cx).attr("class", "col")
+}
+pub fn GridColJustify(cx: Scope) -> HtmlElement<Div> {
+    div(cx)
+        .classes("col")
+        .classes("d-flex justify-content-center")
+}
+pub fn Box(cx: Scope) -> HtmlElement<Div> {
+    div(cx)
+        .classes("border rounded")
+        .style("width", "5vw")
+        .style("height", "5vw")
 }
 
 pub fn CustomSelect(cx: Scope) -> HtmlElement<Select> {
@@ -23,7 +37,7 @@ pub fn ScrollableContainerBox(cx: Scope) -> HtmlElement<Div> {
     div(cx)
         .style("height", "80vh")
         .style("overflow-y", "auto")
-        .classes("container border")
+        .classes("container border rounded pt-2")
 }
 
 pub fn AccordionHeader(
@@ -98,4 +112,8 @@ pub fn TabPanel(
         .attr("aria-labelledby", id.to_string())
         .attr("tabindex", "0")
         .child(child)
+}
+
+pub fn HorizontalPanel(cx: Scope) -> HtmlElement<Div> {
+    div(cx).classes("border rounded my-2 py-3 text-center")
 }

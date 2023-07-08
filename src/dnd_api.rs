@@ -1,3 +1,4 @@
+use leptos::html::Sub;
 use regex_static::static_regex;
 use regex_static::Regex;
 use serde::Deserialize;
@@ -90,7 +91,9 @@ impl Species {
                 }
             }
         }
-        features.push(current_feature);
+        if current_feature.name != "" {
+            features.push(current_feature);
+        }
         features
     }
 }
@@ -111,6 +114,43 @@ pub struct Subspecies {
     pub document_title: String,
     #[serde(rename = "document__url")]
     pub document_url: String,
+}
+
+impl Subspecies {
+    pub fn features(&self) -> Vec<SpeciesFeature> {
+        let mut features: Vec<SpeciesFeature> = vec![];
+
+        let desc_parts = self.traits.split("\n\n").collect::<Vec<&str>>();
+
+        let mut current_feature = SpeciesFeature::default();
+        for line in desc_parts {
+            let line = line.replace("**_", "***").replace("_**", "***");
+            let re = Regex::new(r"\*\*\*(.+)\*\*\*(.+)");
+            if let Ok(re) = re {
+                match re.captures(&line) {
+                    Some(captures) => {
+                        if current_feature.name != "" {
+                            features.push(current_feature);
+                            current_feature = SpeciesFeature::default();
+                        }
+                        if let Some(group) = captures.get(1) {
+                            current_feature.name = group.as_str().to_string();
+                        }
+                        if let Some(group) = captures.get(2) {
+                            current_feature.desc += group.as_str();
+                        }
+                    }
+                    None => {
+                        current_feature.desc += &line;
+                    }
+                }
+            }
+        }
+        if current_feature.name != "" {
+            features.push(current_feature);
+        }
+        features
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -169,7 +209,9 @@ impl Class {
             static_regex!(r"Starting at ([0-9]{1,2})[a-zA-Z]{1,2} level"),
             static_regex!(r"By ([0-9]{1,2})[a-zA-Z]{1,2} level"),
             static_regex!(r"Beginning at ([0-9]{1,2})[a-zA-Z]{1,2} level"),
-            static_regex!(r"Beginning when you reach ([0-9]{1,2})[a-zA-Z]{1,2} level"),
+            static_regex!(
+                r"Beginning when you reach ([0-9]{1,2})[a-zA-Z]{1,2} level"
+            ),
         ];
         let mut features: Vec<Feature> = vec![];
 
@@ -193,8 +235,11 @@ impl Class {
                     if let Some(captures) = matches {
                         if let Some(group) = captures.get(1) {
                             let string = group.as_str();
-                            let level = str::parse::<i32>(string)
-                                .expect(&format!("Parsed a non-numeric level: {}", string));
+                            let level =
+                                str::parse::<i32>(string).expect(&format!(
+                                    "Parsed a non-numeric level: {}",
+                                    string
+                                ));
 
                             if current_feature.level != 0 {
                                 let new_feature = Feature {

@@ -47,9 +47,8 @@ pub fn Header(
         CharacterDetails::set_level,
     );
 
-    div(cx)
-        .classes("container border m-3 pt-2 text-center")
-        .child(
+    div(cx).classes("container").child(
+        HorizontalPanel(cx).child(
             GridRow(cx)
                 .classes("row container gx-5")
                 .child(
@@ -59,7 +58,7 @@ pub fn Header(
                 )
                 .child(
                     GridCol(cx)
-                        .child(GridRow(cx).child(ClassDropdown(
+                        .child(GridRowMarginBottom(cx).child(ClassDropdown(
                             cx,
                             class_future,
                             class,
@@ -76,7 +75,7 @@ pub fn Header(
                     GridCol(cx)
                         //.attr("class", "col-sm-3")
                         .child(
-                            GridRow(cx)
+                            GridRowMarginBottom(cx)
                                 .child(LevelDropdown(cx, level, set_level)),
                         )
                         .child(GridRow(cx).child(div(cx).child(
@@ -88,7 +87,8 @@ pub fn Header(
                             ),
                         ))),
                 ),
-        )
+        ),
+    )
 }
 
 fn SpeciesDropdown(

@@ -159,6 +159,8 @@ pub fn App(cx: Scope) -> impl IntoView {
         create_read_slice(cx, character, |c| c.class.clone()),
         create_read_slice(cx, character, CharacterDetails::level),
     );
+
+    // These should probably be refactored to be cleaner and more properly reactive
     let species_tab = div(cx).child(move || {
         species_future.with(cx, |species_list| {
             species_list
@@ -191,14 +193,98 @@ pub fn App(cx: Scope) -> impl IntoView {
             class_future,
             backgrounds_future,
         ),
+        // Send row
+        div(cx).classes("container").child(
+            HorizontalPanel(cx).child(
+                GridRow(cx)
+                    .child(GridCol(cx).child(AbilityScoreBox(
+                        cx,
+                        "Strength",
+                        create_slice(
+                            cx,
+                            character,
+                            |c| c.ability_scores.base_str,
+                            |c, v| c.ability_scores.base_str = v,
+                        ),
+                        create_read_slice(cx, character, |c| {
+                            c.ability_scores.str_mod()
+                        }),
+                    )))
+                    .child(GridCol(cx).child(AbilityScoreBox(
+                        cx,
+                        "Dexterity",
+                        create_slice(
+                            cx,
+                            character,
+                            |c| c.ability_scores.base_dex,
+                            |c, v| c.ability_scores.base_dex = v,
+                        ),
+                        create_read_slice(cx, character, |c| {
+                            c.ability_scores.dex_mod()
+                        }),
+                    )))
+                    .child(GridCol(cx).child(AbilityScoreBox(
+                        cx,
+                        "Constitution",
+                        create_slice(
+                            cx,
+                            character,
+                            |c| c.ability_scores.base_con,
+                            |c, v| c.ability_scores.base_con = v,
+                        ),
+                        create_read_slice(cx, character, |c| {
+                            c.ability_scores.con_mod()
+                        }),
+                    )))
+                    .child(GridCol(cx).child(AbilityScoreBox(
+                        cx,
+                        "Wisdom",
+                        create_slice(
+                            cx,
+                            character,
+                            |c| c.ability_scores.base_wis,
+                            |c, v| c.ability_scores.base_wis = v,
+                        ),
+                        create_read_slice(cx, character, |c| {
+                            c.ability_scores.wis_mod()
+                        }),
+                    )))
+                    .child(GridCol(cx).child(AbilityScoreBox(
+                        cx,
+                        "Intelligence",
+                        create_slice(
+                            cx,
+                            character,
+                            |c| c.ability_scores.base_int,
+                            |c, v| c.ability_scores.base_int = v,
+                        ),
+                        create_read_slice(cx, character, |c| {
+                            c.ability_scores.int_mod()
+                        }),
+                    )))
+                    .child(GridCol(cx).child(AbilityScoreBox(
+                        cx,
+                        "Charisma",
+                        create_slice(
+                            cx,
+                            character,
+                            |c| c.ability_scores.base_cha,
+                            |c, v| c.ability_scores.base_cha = v,
+                        ),
+                        create_read_slice(cx, character, |c| {
+                            c.ability_scores.cha_mod()
+                        }),
+                    ))),
+            ),
+        ),
         div(cx)
             .attr("class", "container")
             // Left column
             .child(
                 GridRow(cx)
-                    .child(GridCol(cx).child("Column One"))
+                    .child(GridCol(cx).child(ScrollableContainerBox(cx)))
                     // Center column
-                    .child(GridCol(cx).child("Column Two"))
+                    .child(GridCol(cx).child(ScrollableContainerBox(cx)))
                     // Right column
                     .child(GridCol(cx).child(features_panel)),
             ),
@@ -221,7 +307,7 @@ fn FeaturePanel(
                 .attr("role", "tablist")
                 .child(vec![
                     Tab(cx, "class-tab", true, "Class"),
-                    Tab(cx, "species-tab", false, "Class"),
+                    Tab(cx, "species-tab", false, "Species"),
                     Tab(cx, "background-tab", false, "Background"),
                 ]),
         )
@@ -245,49 +331,28 @@ fn SpeciesDisplay(
     get_subspecies: Signal<String>,
     set_subspecies: SignalSetter<String>,
 ) -> HtmlElement<Div> {
-    //let mut desc = format!(
-    //    "{}\n{}",
-    //    parse_markdown(&species.desc),
-    //    parse_markdown_table(&species.traits)
-    //);
-    //for feat in species.features() {
-    //    desc += parse_markdown_table(feat.)
-    //}
-    let subspecies = species.subraces.clone();
-    let subspecies_2 = species.subraces.clone();
-    let dropdown_maybe = if subspecies.len() > 0 {
-        div(cx)
-            .child(SubspeciesDropdown(
-                cx,
-                subspecies,
-                get_subspecies,
-                set_subspecies,
-            ))
-            .child(move || {
-                if get_subspecies.get() != "" {
-                    subspecies_2
-                        .iter()
-                        .find(|s| s.slug == get_subspecies.get())
-                        .map(|s: &Subspecies| {
-                            div(cx).inner_html(format!(
-                                "{}\n{}",
-                                parse_markdown(&s.desc),
-                                parse_markdown(&s.traits)
-                            ))
-                        })
-                        .unwrap_or(div(cx))
-                } else {
-                    div(cx)
-                }
-            })
+    let subspecies_list = species.subraces.clone();
+    let mut features = species.features();
+    let my_subspecies =
+        subspecies_list.iter().find(|s| s.slug == get_subspecies());
+    if let Some(subspecies) = my_subspecies {
+        features.append(&mut subspecies.features());
+    }
+    //let subspecies_list_2 = species.subraces.clone();
+    let dropdown_maybe = if subspecies_list.len() > 0 {
+        div(cx).child(SubspeciesDropdown(
+            cx,
+            subspecies_list,
+            get_subspecies,
+            set_subspecies,
+        ))
     } else {
         div(cx)
     };
-    div(cx)
-        .classes("accordion")
-        .child(
-            species
-                .features()
+
+    let features_div = if features.len() > 0 {
+        div(cx).classes("accordion").child(
+            features
                 .iter()
                 .map(|f| {
                     AccordionItem(
@@ -298,7 +363,11 @@ fn SpeciesDisplay(
                 })
                 .collect::<Vec<HtmlElement<Div>>>(),
         )
-        .child(dropdown_maybe)
+    } else {
+        div(cx)
+    };
+
+    div(cx).child(dropdown_maybe).child(features_div)
 }
 
 pub fn SubspeciesDropdown(
@@ -391,6 +460,51 @@ fn BackgroundDisplay(cx: Scope, background: &Background) -> HtmlElement<Div> {
                 .child(format!("Feature: {}", background.feature.to_string())),
             div(cx).child(background.feature_desc.to_string()),
         ))
+        .child(AccordionItem(
+            cx,
+            div(cx).child(format!("Suggested Characteristics")),
+            div(cx).child(div(cx).inner_html(parse_markdown_table(
+                &background.suggested_characteristics,
+            ))),
+        ))
+}
+
+fn AbilityScoreBox(
+    cx: Scope,
+    score_name: &str,
+    (score, set_score): (Signal<i32>, SignalSetter<i32>),
+    score_mod: Signal<i32>,
+) -> HtmlElement<Div> {
+    div(cx)
+        .classes("d-flex flex-column")
+        .child(score_name.to_string())
+        .child(
+            div(cx)
+                .classes("border rounded text-centered mx-auto")
+                .style("width", "5vw")
+                .style("height", "5vw")
+                .style("text-align", "center")
+                .child(h2(cx).child(score_mod).classes("mt-1")),
+        )
+        .child(
+            input(cx)
+                .classes("border rounded text-centered mx-auto")
+                .style("width", "2.5vw")
+                .style("height", "2.5vw")
+                .style("text-align", "center")
+                .style("margin-top", "-1.5vw")
+                .prop("value", score)
+                .prop("min", 0)
+                .prop("max", 30)
+                .on(ev::change, move |e| {
+                    let val = event_target_value(&e);
+                    if let Ok(num) = str::parse::<i32>(&val) {
+                        set_score(num)
+                    } else {
+                        set_score(10)
+                    }
+                }),
+        )
 }
 
 pub fn parse_markdown(markdown: &str) -> String {
