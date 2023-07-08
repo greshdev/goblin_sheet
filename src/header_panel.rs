@@ -1,0 +1,230 @@
+use leptos::{html::*, *};
+
+use crate::{
+    character_model::CharacterDetails,
+    components::*,
+    dnd_api::{Class, *},
+    OptionList,
+};
+
+pub fn Header(
+    cx: Scope,
+    character: RwSignal<CharacterDetails>,
+    species_future: Resource<(), Vec<Species>>,
+    class_future: Resource<(), Vec<crate::dnd_api::Class>>,
+    backgrounds_future: Resource<(), Vec<Background>>,
+) -> HtmlElement<Div> {
+    let (species, set_species) = create_slice(
+        cx,
+        character,
+        |c| c.species.to_string(),
+        |c, n| {
+            c.species = n;
+            // Clear the subspecies when the species changes
+            c.subspecies = String::new();
+        },
+    );
+    let (class, set_class) = create_slice(
+        cx,
+        character,
+        |c| c.class.to_string(),
+        |c, v| c.class = v,
+    );
+    let (background, set_background) = create_slice(
+        cx,
+        character,
+        |c| c.background.to_string(),
+        |c, v| c.background = v,
+    );
+
+    let (name, set_name) =
+        create_slice(cx, character, |c| c.name.to_string(), |c, n| c.name = n);
+
+    let (level, set_level) = create_slice(
+        cx,
+        character,
+        CharacterDetails::level,
+        CharacterDetails::set_level,
+    );
+
+    div(cx)
+        .classes("container border m-3 pt-2 text-center")
+        .child(
+            GridRow(cx)
+                .classes("row container gx-5")
+                .child(
+                    div(cx)
+                        .classes("col d-flex align-items-center")
+                        .child(NameInputBox(cx, name, set_name)),
+                )
+                .child(
+                    GridCol(cx)
+                        .child(GridRow(cx).child(ClassDropdown(
+                            cx,
+                            class_future,
+                            class,
+                            set_class,
+                        )))
+                        .child(GridRow(cx).child(SpeciesDropdown(
+                            cx,
+                            species_future,
+                            species,
+                            set_species,
+                        ))),
+                )
+                .child(
+                    GridCol(cx)
+                        //.attr("class", "col-sm-3")
+                        .child(
+                            GridRow(cx)
+                                .child(LevelDropdown(cx, level, set_level)),
+                        )
+                        .child(GridRow(cx).child(div(cx).child(
+                            BackgroundDropdown(
+                                cx,
+                                backgrounds_future,
+                                background,
+                                set_background,
+                            ),
+                        ))),
+                ),
+        )
+}
+
+fn SpeciesDropdown(
+    cx: Scope,
+    future: Resource<(), Vec<Species>>,
+    species: Signal<String>,
+    set_species: SignalSetter<String>,
+) -> impl IntoView {
+    CustomSelect(cx)
+        //.classes("mb-3")
+        .prop("value", species)
+        .on(ev::change, move |e| set_species(event_target_value(&e)))
+        .attr("placeholder", "Species")
+        .child(option(cx).prop("value", "").child("Select a species..."))
+        .child(move || {
+            future
+                .with(cx, |species_list| {
+                    species_list
+                        .iter()
+                        .map(|s| {
+                            SpeciesOption(cx, s)
+                                .prop("selected", s.slug == species())
+                        })
+                        .collect::<OptionList>()
+                })
+                .unwrap_or(vec![option(cx).child("Loading....")])
+        })
+}
+
+fn SpeciesOption(cx: Scope, species: &Species) -> HtmlElement<Option_> {
+    option(cx)
+        .prop("value", species.slug.clone())
+        .child(format!("{} ({})", species.name, species.document_title))
+}
+
+fn ClassOptionList(
+    cx: Scope,
+    classes: &Vec<Class>,
+    class: Signal<String>,
+) -> OptionList {
+    classes
+        .iter()
+        .map(|c| {
+            option(cx)
+                .prop("value", c.slug.clone())
+                .prop("selected", c.slug == class())
+                .child(c.name.clone())
+        })
+        .collect::<OptionList>()
+}
+
+fn ClassDropdown(
+    cx: Scope,
+    future: Resource<(), Vec<crate::dnd_api::Class>>,
+    class: Signal<String>,
+    set_class: SignalSetter<String>,
+) -> impl IntoView {
+    CustomSelect(cx)
+        .prop("value", class)
+        .on(ev::change, move |e| set_class(event_target_value(&e)))
+        .child(option(cx).child("Select a class...").prop("value", ""))
+        .child(move || {
+            future
+                .with(cx, |c| ClassOptionList(cx, c, class))
+                .unwrap_or(vec![option(cx).child("Loading...")])
+        })
+}
+
+fn BackgroundDropdown(
+    cx: Scope,
+    future: Resource<(), Vec<Background>>,
+    background: Signal<String>,
+    set_background: SignalSetter<String>,
+) -> HtmlElement<Select> {
+    CustomSelect(cx)
+        .prop("value", background)
+        .on(ev::change, move |e| set_background(event_target_value(&e)))
+        .child(option(cx).child("Select a background...").prop("value", ""))
+        .child(move || {
+            future
+                .with(cx, |bg| {
+                    bg.iter()
+                        .map(|c| {
+                            option(cx)
+                                .prop("value", c.slug.clone())
+                                .prop("selected", c.slug == background.get())
+                                .child(format!(
+                                    "{} ({})",
+                                    c.name, c.document_title
+                                ))
+                        })
+                        .collect::<OptionList>()
+                })
+                .unwrap_or(vec![option(cx).child("Loading...")])
+        })
+}
+
+pub fn NameInputBox(
+    cx: Scope,
+    name: Signal<String>,
+    set_name: SignalSetter<String>,
+) -> HtmlElement<Input> {
+    input(cx)
+        .classes("form-control")
+        .attr("placeholder", "Character Name")
+        .on(ev::input, move |e| set_name(event_target_value(&e)))
+        .prop("value", name)
+}
+
+pub fn LevelDropdown(
+    cx: Scope,
+    level: Signal<i32>,
+    set_level: SignalSetter<i32>,
+) -> HtmlElement<Div> {
+    div(cx)
+        .classes("input-group")
+        .child(div(cx).classes("input-group-text").child("Level:"))
+        .child(
+            CustomSelect(cx)
+                .prop("value", level)
+                .on(ev::input, move |e| {
+                    let event_val = event_target_value(&e);
+                    if let Ok(num) = str::parse::<i32>(&event_val) {
+                        set_level(num);
+                    }
+                })
+                .child(
+                    (1..=20)
+                        .into_iter()
+                        .map(|i| {
+                            option(cx)
+                                .prop("value", i)
+                                .prop("selected", i == level.get())
+                                .child(i.to_string())
+                        })
+                        .collect::<OptionList>(),
+                ),
+        )
+}
