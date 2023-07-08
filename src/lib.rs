@@ -26,15 +26,15 @@ async fn fetch_species(_: ()) -> Vec<Species> {
             Ok(api) => api.results,
             // Handle deserialization error condition
             Err(e) => {
-                leptos::log!("Could not deserialize data from Open5e to the SpeciesAPI struct!");
-                leptos::log!("{}", e);
+                log!("Could not deserialize data from Open5e to the SpeciesAPI struct!");
+                log!("{}", e);
                 vec![]
             }
         },
         // If our request errors, return an empty list
         Err(e) => {
-            leptos::log!("Error fetching species data from Open5e!");
-            leptos::log!("{}", e);
+            log!("Error fetching species data from Open5e!");
+            log!("{}", e);
             vec![]
         }
     }
@@ -50,15 +50,15 @@ async fn fetch_classes(_: ()) -> Vec<Class> {
             Ok(api) => api.results,
             // Handle deserialization error condition
             Err(e) => {
-                leptos::log!("Could not deserialize data from Open5e to the ClassAPI struct!");
-                leptos::log!("{}", e);
+                log!("Could not deserialize data from Open5e to the ClassAPI struct!");
+                log!("{}", e);
                 vec![]
             }
         },
         // If our request errors, return an empty list
         Err(e) => {
-            leptos::log!("Error fetching class data from Open5e!");
-            leptos::log!("{}", e);
+            log!("Error fetching class data from Open5e!");
+            log!("{}", e);
             vec![]
         }
     }
@@ -72,18 +72,23 @@ async fn fetch_backgrounds(_: ()) -> Vec<Background> {
             .await;
     match res {
         Ok(response) => match response.json::<BackgroundsAPI>().await {
-            Ok(api) => api.results,
+            Ok(api) => api
+                .results
+                .iter()
+                .filter(|b| b.document_slug != "a5e")
+                .cloned()
+                .collect::<Vec<Background>>(),
             // Handle deserialization error condition
             Err(e) => {
-                leptos::log!("Could not deserialize data from Open5e to the BackgroundAPI struct!");
-                leptos::log!("{}", e);
+                log!("Could not deserialize data from Open5e to the BackgroundAPI struct!");
+                log!("{}", e);
                 vec![]
             }
         },
         // If our request errors, return an empty list
         Err(e) => {
-            leptos::log!("Error fetching background data from Open5e!");
-            leptos::log!("{}", e);
+            log!("Error fetching background data from Open5e!");
+            log!("{}", e);
             vec![]
         }
     }
@@ -127,6 +132,9 @@ pub fn App(cx: Scope) -> impl IntoView {
         }
     });
 
+    let background =
+        create_read_slice(cx, character, |c| c.background.to_string());
+
     let (species, _) = create_slice(
         cx,
         character,
@@ -161,10 +169,18 @@ pub fn App(cx: Scope) -> impl IntoView {
                 })
         })
     });
+    let background_tab = div(cx).child(move || {
+        backgrounds_future.with(cx, |backgrounds| {
+            backgrounds
+                .iter()
+                .find(|b| b.slug == background())
+                .map(|b| BackgroundDisplay(cx, b))
+        })
+    });
 
     let features_panel = ScrollableContainerBox(cx)
         .child(h1(cx).child("Features:"))
-        .child(FeaturePanel(cx, class_tab, species_tab));
+        .child(FeaturePanel(cx, class_tab, species_tab, background_tab));
 
     // Render the page
     vec![
@@ -195,6 +211,7 @@ fn FeaturePanel(
     cx: Scope,
     class_tab: HtmlElement<Div>,
     species_tab: HtmlElement<Div>,
+    background_tab: HtmlElement<Div>,
 ) -> HtmlElement<Div> {
     div(cx)
         .child(
@@ -205,6 +222,7 @@ fn FeaturePanel(
                 .child(vec![
                     Tab(cx, "class-tab", true, "Class"),
                     Tab(cx, "species-tab", false, "Class"),
+                    Tab(cx, "background-tab", false, "Background"),
                 ]),
         )
         .child(
@@ -215,6 +233,7 @@ fn FeaturePanel(
                     .child(vec![
                         TabPanel(cx, "class-tab", true, class_tab),
                         TabPanel(cx, "species-tab", false, species_tab),
+                        TabPanel(cx, "background-tab", false, background_tab),
                     ]),
             ),
         )
@@ -356,6 +375,22 @@ pub fn FeatureItem(cx: Scope, f: &Feature) -> HtmlElement<Div> {
         div(cx).child(format!("{} (Level {})", f.name.clone(), f.level)),
         div(cx).inner_html(parse_markdown_table(&f.desc)),
     )
+}
+
+fn BackgroundDisplay(cx: Scope, background: &Background) -> HtmlElement<Div> {
+    div(cx)
+        .classes("accordion")
+        .child(AccordionItem(
+            cx,
+            div(cx).child("Description"),
+            div(cx).inner_html(parse_markdown_table(&background.desc)),
+        ))
+        .child(AccordionItem(
+            cx,
+            div(cx)
+                .child(format!("Feature: {}", background.feature.to_string())),
+            div(cx).child(background.feature_desc.to_string()),
+        ))
 }
 
 pub fn parse_markdown(markdown: &str) -> String {
