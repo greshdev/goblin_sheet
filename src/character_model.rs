@@ -54,7 +54,7 @@ impl CharacterDetails {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub struct CharacterAsi {
     pub score: AbilityScore,
     pub source_slug: String,
@@ -159,6 +159,11 @@ impl AbilityScores {
         (self.cha_score() - 10) / 2
     }
     pub fn new() -> Self {
+        //let test = CharacterAsi {
+        //    score: AbilityScore::Charisma,
+        //    source_slug: String::default(),
+        //    amount: 4,
+        //};
         Self {
             base_str: 10,
             base_dex: 10,

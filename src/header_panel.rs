@@ -1,7 +1,7 @@
 use leptos::{html::*, *};
 
 use crate::{
-    character_model::CharacterDetails,
+    character_model::{AbilityScore, CharacterAsi, CharacterDetails},
     components::*,
     dnd_api::{Class, *},
     OptionList,
@@ -67,6 +67,12 @@ pub fn Header(
                             futures.species,
                             species,
                             set_species,
+                            create_slice(
+                                cx,
+                                character,
+                                |c| c.ability_scores.level_1_asis.clone(),
+                                |c, v| c.ability_scores.level_1_asis = v,
+                            ),
                         ))),
                 )
                 .child(
@@ -94,14 +100,55 @@ fn SpeciesDropdown(
     future: Resource<(), Vec<Species>>,
     species: Signal<String>,
     set_species: SignalSetter<String>,
+    level_one_asis: (
+        Signal<Vec<CharacterAsi>>,
+        SignalSetter<Vec<CharacterAsi>>,
+    ),
 ) -> impl IntoView {
+    let change_species = move |e| {
+        let new_val = event_target_value(&e);
+        let mut asis = level_one_asis
+            .0
+            .get()
+            .iter()
+            .filter(|f| f.source_slug != species())
+            //.filter(|f| f.source_slug != subspecies())
+            .cloned()
+            .collect::<Vec<CharacterAsi>>();
+
+        let new_species = future.with(cx, |list| {
+            list.iter().find(|v| v.slug == new_val).cloned().unwrap()
+        });
+        if let Some(new_species) = new_species {
+            let mut new_asis = new_species
+                .asi
+                .iter()
+                .map(|a| {
+                    let amount = a.value;
+                    let attributes = &a.attributes;
+                    let mut asis: Vec<CharacterAsi> = vec![];
+                    for attribute in attributes {
+                        let ability_score =
+                            AbilityScore::from_string(&attribute).unwrap();
+                        asis.push(CharacterAsi {
+                            score: ability_score,
+                            source_slug: new_val.clone(),
+                            amount,
+                        });
+                    }
+                    asis
+                })
+                .flatten()
+                .collect::<Vec<CharacterAsi>>();
+            asis.append(&mut new_asis);
+        }
+        level_one_asis.1(asis);
+        set_species(new_val.clone());
+    };
     CustomSelect(cx)
         //.classes("mb-3")
         .prop("value", species)
-        .on(ev::change, move |e| {
-            let new_val = event_target_value(&e);
-            set_species(new_val.clone());
-        })
+        .on(ev::change, change_species)
         .attr("placeholder", "Species")
         .child(option(cx).prop("value", "").child("Select a species..."))
         .child(move || {
