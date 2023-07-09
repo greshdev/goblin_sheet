@@ -10,9 +10,7 @@ use crate::{
 pub fn Header(
     cx: Scope,
     character: RwSignal<CharacterDetails>,
-    species_future: Resource<(), Vec<Species>>,
-    class_future: Resource<(), Vec<crate::dnd_api::Class>>,
-    backgrounds_future: Resource<(), Vec<Background>>,
+    futures: FuturesWrapper,
 ) -> HtmlElement<Div> {
     let (species, set_species) = create_slice(
         cx,
@@ -60,13 +58,13 @@ pub fn Header(
                     GridCol(cx)
                         .child(GridRowMarginBottom(cx).child(ClassDropdown(
                             cx,
-                            class_future,
+                            futures.classes,
                             class,
                             set_class,
                         )))
                         .child(GridRow(cx).child(SpeciesDropdown(
                             cx,
-                            species_future,
+                            futures.species,
                             species,
                             set_species,
                         ))),
@@ -81,7 +79,7 @@ pub fn Header(
                         .child(GridRow(cx).child(div(cx).child(
                             BackgroundDropdown(
                                 cx,
-                                backgrounds_future,
+                                futures.backgrounds,
                                 background,
                                 set_background,
                             ),
@@ -109,19 +107,18 @@ fn SpeciesDropdown(
                     species_list
                         .iter()
                         .map(|s| {
-                            SpeciesOption(cx, s)
-                                .prop("selected", s.slug == species())
+                            OptionWithDocTitle(
+                                cx,
+                                &species(),
+                                &s.slug,
+                                &s.name,
+                                &s.document_title,
+                            )
                         })
                         .collect::<OptionList>()
                 })
                 .unwrap_or(vec![option(cx).child("Loading....")])
         })
-}
-
-fn SpeciesOption(cx: Scope, species: &Species) -> HtmlElement<Option_> {
-    option(cx)
-        .prop("value", species.slug.clone())
-        .child(format!("{} ({})", species.name, species.document_title))
 }
 
 fn ClassOptionList(
@@ -172,13 +169,13 @@ fn BackgroundDropdown(
                 .with(cx, |bg| {
                     bg.iter()
                         .map(|c| {
-                            option(cx)
-                                .prop("value", c.slug.clone())
-                                .prop("selected", c.slug == background.get())
-                                .child(format!(
-                                    "{} ({})",
-                                    c.name, c.document_title
-                                ))
+                            OptionWithDocTitle(
+                                cx,
+                                &background.get(),
+                                &c.slug,
+                                &c.name,
+                                &c.document_title,
+                            )
                         })
                         .collect::<OptionList>()
                 })

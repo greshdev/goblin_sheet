@@ -1,4 +1,4 @@
-use leptos::{html::*, Scope};
+use leptos::{component, html::*, Scope};
 use uuid::Uuid;
 
 /* pub fn FlexRow(cx: Scope) -> HtmlElement<Div> {
@@ -33,9 +33,31 @@ pub fn CustomSelect(cx: Scope) -> HtmlElement<Select> {
     //.style("border-bottom", "thin solid white")
 }
 
+///
+/// # Arguments
+///
+/// * `current` - The currently selected item. An item with a slug matching this
+/// string will be marked "selected"
+/// * `slug` - The "value" of this option
+/// * `name` - Part of the title of this option
+/// * `doc_title` - The part of the title of this option, which goes in
+/// parenthesis after the name.
+pub fn OptionWithDocTitle(
+    cx: Scope,
+    current: &str,
+    slug: &str,
+    name: &str,
+    doc_title: &str,
+) -> HtmlElement<Option_> {
+    option(cx)
+        .prop("value", slug)
+        .child(format!("{} ({})", name, doc_title))
+        .prop("selected", slug == current)
+}
+
 pub fn ScrollableContainerBox(cx: Scope) -> HtmlElement<Div> {
     div(cx)
-        .style("height", "80vh")
+        .style("height", "65vh")
         .style("overflow-y", "auto")
         .classes("container border rounded pt-2")
 }
