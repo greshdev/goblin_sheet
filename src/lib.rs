@@ -1,19 +1,23 @@
 #![allow(non_snake_case)]
 
+mod api;
 mod character_model;
 mod components;
-mod dnd_api;
 mod header_panel;
 mod markdown;
 
+use crate::api::api_model::Class;
+use crate::api::FuturesWrapper;
 use crate::character_model::CharacterDetails;
 use crate::components::*;
-use crate::dnd_api::*;
 use crate::markdown::*;
-use dnd_api::Class;
+use api::api_extensions::*;
 
+use api::api_model::Background;
+use api::api_model::Species;
+use api::api_model::Subspecies;
 use header_panel::Header;
-use leptos::{component, create_local_resource, IntoView, Scope};
+use leptos::{component, IntoView, Scope};
 use leptos::{ev, html::*, *};
 
 const CHAR_STORAGE_KEY: &str = "character_sheet_character";
@@ -61,6 +65,8 @@ pub fn App(cx: Scope) -> impl IntoView {
 
     let species_slice =
         create_read_slice(cx, character, |c| c.species.to_string());
+    let subspecies_slice =
+        create_read_slice(cx, character, |c| c.subspecies.to_string());
 
     let current_species = move || {
         species_slice.with(|species_slug| {
@@ -72,6 +78,12 @@ pub fn App(cx: Scope) -> impl IntoView {
             }
         })
     };
+
+    //let computed_asis = move || {
+    //    let species = species_slice.get();
+    //    let subspecies = species_slice.get();
+    //    let species_def =
+    //};
 
     let background =
         create_read_slice(cx, character, |c| c.background.to_string());

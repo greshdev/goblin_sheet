@@ -1,9 +1,10 @@
 use leptos::{html::*, *};
 
 use crate::{
+    api::api_model::{Class, *},
+    api::*,
     character_model::{AbilityScore, CharacterAsi, CharacterDetails},
     components::*,
-    dnd_api::{Class, *},
     OptionList,
 };
 
@@ -100,16 +101,15 @@ fn SpeciesDropdown(
     future: Resource<(), Vec<Species>>,
     species: Signal<String>,
     set_species: SignalSetter<String>,
-    level_one_asis: (
+    (get_level_one_asis, set_level_one_asis): (
         Signal<Vec<CharacterAsi>>,
         SignalSetter<Vec<CharacterAsi>>,
     ),
 ) -> impl IntoView {
+    // ALTERNATIVE ASI idea: make ASIs a feature modifier.
     let change_species = move |e| {
         let new_val = event_target_value(&e);
-        let mut asis = level_one_asis
-            .0
-            .get()
+        let mut asis = get_level_one_asis()
             .iter()
             .filter(|f| f.source_slug != species())
             //.filter(|f| f.source_slug != subspecies())
@@ -142,7 +142,7 @@ fn SpeciesDropdown(
                 .collect::<Vec<CharacterAsi>>();
             asis.append(&mut new_asis);
         }
-        level_one_asis.1(asis);
+        set_level_one_asis(asis);
         set_species(new_val.clone());
     };
     CustomSelect(cx)
@@ -189,7 +189,7 @@ fn ClassOptionList(
 
 fn ClassDropdown(
     cx: Scope,
-    future: Resource<(), Vec<crate::dnd_api::Class>>,
+    future: Resource<(), Vec<Class>>,
     class: Signal<String>,
     set_class: SignalSetter<String>,
 ) -> impl IntoView {
