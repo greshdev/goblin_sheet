@@ -59,6 +59,20 @@ pub fn App(cx: Scope) -> impl IntoView {
     // Create wrapper for async access to data from Open5e
     let api_data = FuturesWrapper::new(cx);
 
+    let species_slice =
+        create_read_slice(cx, character, |c| c.species.to_string());
+
+    let current_species = move || {
+        species_slice.with(|species_slug| {
+            let slug = species_slug.clone();
+            if let Some(species_list) = api_data.species.read(cx) {
+                species_list.iter().find(|s| s.slug == slug).cloned()
+            } else {
+                None
+            }
+        })
+    };
+
     let background =
         create_read_slice(cx, character, |c| c.background.to_string());
 
@@ -111,44 +125,6 @@ pub fn App(cx: Scope) -> impl IntoView {
 
 type OptionList = Vec<HtmlElement<Option_>>;
 
-fn AbilityScoreBox(
-    cx: Scope,
-    score_name: &str,
-    (score, set_score): (Signal<i32>, SignalSetter<i32>),
-    score_mod: Signal<i32>,
-) -> HtmlElement<Div> {
-    div(cx)
-        .classes("d-flex flex-column")
-        .child(score_name.to_string())
-        .child(
-            div(cx)
-                .classes("border rounded text-centered mx-auto")
-                .style("width", "5vw")
-                .style("height", "5vw")
-                .style("text-align", "center")
-                .child(h2(cx).child(score_mod).classes("mt-1")),
-        )
-        .child(
-            input(cx)
-                .classes("border rounded text-centered mx-auto")
-                .style("width", "2.5vw")
-                .style("height", "2.5vw")
-                .style("text-align", "center")
-                .style("margin-top", "-1.5vw")
-                .prop("value", score)
-                .prop("min", 0)
-                .prop("max", 30)
-                .on(ev::change, move |e| {
-                    let val = event_target_value(&e);
-                    if let Ok(num) = str::parse::<i32>(&val) {
-                        set_score(num)
-                    } else {
-                        set_score(10)
-                    }
-                }),
-        )
-}
-
 pub fn StatsRow(
     cx: Scope,
     character: RwSignal<CharacterDetails>,
@@ -158,6 +134,9 @@ pub fn StatsRow(
             .child(GridCol(cx).child(AbilityScoreBox(
                 cx,
                 "Strength",
+                create_read_slice(cx, character, |c| {
+                    c.ability_scores.str_score()
+                }),
                 create_slice(
                     cx,
                     character,
@@ -171,6 +150,9 @@ pub fn StatsRow(
             .child(GridCol(cx).child(AbilityScoreBox(
                 cx,
                 "Dexterity",
+                create_read_slice(cx, character, |c| {
+                    c.ability_scores.dex_score()
+                }),
                 create_slice(
                     cx,
                     character,
@@ -184,6 +166,9 @@ pub fn StatsRow(
             .child(GridCol(cx).child(AbilityScoreBox(
                 cx,
                 "Constitution",
+                create_read_slice(cx, character, |c| {
+                    c.ability_scores.con_score()
+                }),
                 create_slice(
                     cx,
                     character,
@@ -197,6 +182,9 @@ pub fn StatsRow(
             .child(GridCol(cx).child(AbilityScoreBox(
                 cx,
                 "Wisdom",
+                create_read_slice(cx, character, |c| {
+                    c.ability_scores.wis_score()
+                }),
                 create_slice(
                     cx,
                     character,
@@ -210,6 +198,9 @@ pub fn StatsRow(
             .child(GridCol(cx).child(AbilityScoreBox(
                 cx,
                 "Intelligence",
+                create_read_slice(cx, character, |c| {
+                    c.ability_scores.int_score()
+                }),
                 create_slice(
                     cx,
                     character,
@@ -223,6 +214,9 @@ pub fn StatsRow(
             .child(GridCol(cx).child(AbilityScoreBox(
                 cx,
                 "Charisma",
+                create_read_slice(cx, character, |c| {
+                    c.ability_scores.cha_score()
+                }),
                 create_slice(
                     cx,
                     character,
@@ -234,6 +228,55 @@ pub fn StatsRow(
                 }),
             ))),
     )
+}
+
+fn AbilityScoreBox(
+    cx: Scope,
+    score_name: &str,
+    score: Signal<i32>,
+    (score_base, set_score_base): (Signal<i32>, SignalSetter<i32>),
+    score_mod: Signal<i32>,
+) -> HtmlElement<Div> {
+    let (edit_mode, set_edit_mode) = create_signal(cx, false);
+    let display_score =
+        move || if edit_mode() { score_base() } else { score() };
+    div(cx)
+        .classes("d-flex flex-column")
+        .child(score_name.to_string())
+        .child(
+            div(cx)
+                .classes("border rounded text-centered mx-auto")
+                .style("width", "5vw")
+                .style("height", "5vw")
+                .style("text-align", "center")
+                .child(h2(cx).child(score_mod).classes("mt-1")),
+        )
+        .child(
+            input(cx)
+                //div(cx)
+                .classes("border rounded mx-auto")
+                .style("width", "2.5vw")
+                .style("height", "2.5vw")
+                .style("margin-top", "-1.5vw")
+                .style("text-align", "center")
+                //.classes("p-1")
+                .style("background", "#212529")
+                .prop("value", display_score)
+                //.child(display_score)
+                // When we "focus" on the input, switch to edit mode
+                // and to show the "base" score
+                .on(ev::focusin, move |_| set_edit_mode(true))
+                // When we lose focus, switch back
+                .on(ev::focusout, move |_| set_edit_mode(false))
+                .on(ev::change, move |e| {
+                    let val = event_target_value(&e);
+                    if let Ok(num) = str::parse::<i32>(&val) {
+                        set_score_base(num)
+                    } else {
+                        set_score_base(10)
+                    }
+                }),
+        )
 }
 
 /*====================================

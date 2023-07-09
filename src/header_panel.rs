@@ -98,7 +98,10 @@ fn SpeciesDropdown(
     CustomSelect(cx)
         //.classes("mb-3")
         .prop("value", species)
-        .on(ev::change, move |e| set_species(event_target_value(&e)))
+        .on(ev::change, move |e| {
+            let new_val = event_target_value(&e);
+            set_species(new_val.clone());
+        })
         .attr("placeholder", "Species")
         .child(option(cx).prop("value", "").child("Select a species..."))
         .child(move || {
