@@ -5,6 +5,23 @@ use crate::character_model::CharacterAsi;
 
 use super::api_model::*;
 
+#[derive(Default, Serialize, Deserialize, Clone, PartialEq)]
+pub struct Feature {
+    pub name: String,
+    pub desc: String,
+    pub level: i32,
+    pub feature_type: FeatureType,
+    pub source_slug: String,
+}
+
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
+pub enum FeatureType {
+    Asi(CharacterAsi),
+    Proficiency,
+    #[default]
+    None,
+}
+
 impl Species {
     pub fn features(&self) -> Vec<Feature> {
         let mut features: Vec<Feature> = vec![];
@@ -185,19 +202,29 @@ impl Class {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, PartialEq)]
-pub struct Feature {
-    pub name: String,
-    pub desc: String,
-    pub level: i32,
-    pub feature_type: FeatureType,
-    pub source_slug: String,
-}
+impl Background {
+    pub fn features(&self) -> Vec<Feature> {
+        let source_slug = format!("background:{}", self.slug);
+        let mut features = vec![];
 
-#[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
-pub enum FeatureType {
-    Asi(CharacterAsi),
-    Proficiency,
-    #[default]
-    None,
+        // Primary feature for background
+        features.push(Feature {
+            name: self.feature.to_string(),
+            desc: self.feature_desc.to_string(),
+            level: 1,
+            feature_type: FeatureType::None,
+            source_slug: source_slug.clone(),
+        });
+
+        // Suggested characteristics for background
+        features.push(Feature {
+            name: String::from("Characteristics"),
+            desc: self.suggested_characteristics.to_string(),
+            level: 1,
+            feature_type: FeatureType::None,
+            source_slug: source_slug.clone(),
+        });
+
+        features
+    }
 }

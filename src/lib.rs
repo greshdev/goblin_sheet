@@ -13,7 +13,6 @@ use crate::components::*;
 use crate::markdown::*;
 use api::api_extensions::*;
 
-use api::api_model::Background;
 use api::api_model::Species;
 use api::api_model::Subspecies;
 use header_panel::Header;
@@ -73,14 +72,14 @@ pub fn App(cx: Scope) -> impl IntoView {
     let level = create_read_slice(cx, character, CharacterDetails::level);
 
     // Closure to reactively get the API definition of the current species.
-    let current_species = move || {
+    let current_species = Signal::derive(cx, move || {
         let species = species_slice();
         if let Some(species_list) = api_data.species.read(cx) {
             species_list.iter().find(|s| s.slug == species).cloned()
         } else {
             None
         }
-    };
+    });
 
     // Closure to reactively get the API definition of the current
     // subspecies. Only returns a result if the current subspecies is
@@ -121,7 +120,7 @@ pub fn App(cx: Scope) -> impl IntoView {
         }
     };
 
-    let character_features = move || {
+    let character_features = Signal::derive(cx, move || {
         let mut features_out: Vec<Feature> = vec![];
         // These are currently the only character properties
         // that can supply features, so they're the only ones
@@ -145,7 +144,7 @@ pub fn App(cx: Scope) -> impl IntoView {
 
         // Background
         if let Some(background) = current_background() {
-            //features_out.append(&mut background.features());
+            features_out.append(&mut background.features());
         }
 
         features_out
@@ -153,7 +152,7 @@ pub fn App(cx: Scope) -> impl IntoView {
             .filter(|f| f.level <= level())
             .cloned()
             .collect::<Vec<Feature>>()
-    };
+    });
 
     //let computed_asis = move || {
     //    let species = species_slice.get();
@@ -188,21 +187,7 @@ pub fn App(cx: Scope) -> impl IntoView {
                         cx,
                         character_features,
                         api_data,
-                        //character,
-                        create_read_slice(
-                            cx,
-                            character,
-                            CharacterDetails::level,
-                        ),
-                        create_read_slice(cx, character, |c| {
-                            c.class.to_string()
-                        }),
-                        create_read_slice(cx, character, |c| {
-                            c.species.to_string()
-                        }),
-                        create_read_slice(cx, character, |c| {
-                            c.background.to_string()
-                        }),
+                        current_species,
                         subspecies_signals,
                     )),
             ),
@@ -371,37 +356,28 @@ fn AbilityScoreBox(
  *
  *===================================*/
 
-pub fn RightColumn<T>(
+pub fn RightColumn(
     cx: Scope,
-    features: T,
+    features: Signal<Vec<Feature>>,
     api_data: FuturesWrapper,
-    level: Signal<i32>,
-    class: Signal<String>,
-    species: Signal<String>,
-    background: Signal<String>,
+    current_species: Signal<Option<Species>>,
     subspecies_signals: (Signal<String>, SignalSetter<String>),
-) -> HtmlElement<Div>
-where
-    T: Fn() -> Vec<Feature> + 'static,
-{
+) -> HtmlElement<Div> {
     GridCol(cx).child(
         ScrollableContainerBox(cx)
             .child(h1(cx).child("Features:"))
             .child(FeaturePanel(
                 cx,
                 ClassTab(cx, features),
-                SpeciesTab(cx, species, subspecies_signals, api_data.species),
-                BackgroundTab(cx, background, api_data.backgrounds),
+                SpeciesTab(cx, subspecies_signals, current_species),
+                BackgroundTab(cx, features),
             )),
     )
 }
 
 /// Tab of the feature menu that renders the
 /// features from the character's class
-pub fn ClassTab<T>(cx: Scope, features: T) -> HtmlElement<Div>
-where
-    T: Fn() -> Vec<Feature> + 'static,
-{
+pub fn ClassTab(cx: Scope, features: Signal<Vec<Feature>>) -> HtmlElement<Div> {
     div(cx).child(div(cx).classes("accordion").id("featuresAccordion").child(
         move || {
             features()
@@ -437,19 +413,16 @@ pub fn DisplayClassFeatures(
 /// features from the character's species and subspecies
 pub fn SpeciesTab(
     cx: Scope,
-    species: Signal<String>,
+    // TODO: subspecies_features closure
     (subspecies, set_subspecies): (Signal<String>, SignalSetter<String>),
-    species_future: Resource<(), Vec<Species>>,
+    current_species: Signal<Option<Species>>,
 ) -> HtmlElement<Div> {
     div(cx).child(move || {
-        species_future.with(cx, |species_list| {
-            species_list
-                .iter()
-                .find(|s| s.slug == species.get())
-                .map(|s| {
-                    SpeciesDisplay(cx, s.clone(), subspecies, set_subspecies)
-                })
-        })
+        if let Some(s) = current_species() {
+            SpeciesDisplay(cx, s, subspecies, set_subspecies)
+        } else {
+            div(cx)
+        }
     })
 }
 
@@ -529,40 +502,21 @@ pub fn SubspeciesDropdown(
 /// features from the character's background
 pub fn BackgroundTab(
     cx: Scope,
-    background: Signal<String>,
-    backgrounds_future: Resource<(), Vec<Background>>,
+    features: Signal<Vec<Feature>>,
 ) -> HtmlElement<Div> {
-    div(cx).child(move || {
-        backgrounds_future.with(cx, |backgrounds| {
-            backgrounds
-                .iter()
-                .find(|b| b.slug == background())
-                .map(|b| BackgroundDisplay(cx, b))
-        })
+    div(cx).classes("accordion").child(move || {
+        features()
+            .iter()
+            .filter(|f| f.source_slug.split(":").nth(0) == Some("background"))
+            .map(|f| {
+                AccordionItem(
+                    cx,
+                    div(cx).child(&f.name),
+                    div(cx).inner_html(parse_markdown_table(&f.desc)),
+                )
+            })
+            .collect::<Vec<HtmlElement<Div>>>()
     })
-}
-
-fn BackgroundDisplay(cx: Scope, background: &Background) -> HtmlElement<Div> {
-    div(cx)
-        .classes("accordion")
-        .child(AccordionItem(
-            cx,
-            div(cx).child("Description"),
-            div(cx).inner_html(parse_markdown_table(&background.desc)),
-        ))
-        .child(AccordionItem(
-            cx,
-            div(cx)
-                .child(format!("Feature: {}", background.feature.to_string())),
-            div(cx).child(background.feature_desc.to_string()),
-        ))
-        .child(AccordionItem(
-            cx,
-            div(cx).child(format!("Suggested Characteristics")),
-            div(cx).child(div(cx).inner_html(parse_markdown_table(
-                &background.suggested_characteristics,
-            ))),
-        ))
 }
 
 fn FeaturePanel(

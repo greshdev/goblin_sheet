@@ -5,6 +5,9 @@ use serde_json::Value;
 use crate::character_model::AbilityScore;
 use crate::character_model::CharacterAsi;
 
+use super::api_extensions::Feature;
+use super::api_extensions::FeatureType;
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SpeciesAPI {
