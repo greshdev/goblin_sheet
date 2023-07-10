@@ -1,10 +1,3 @@
-use leptos::create_local_resource;
-use leptos::log;
-use leptos::server_fn::default;
-use leptos::Resource;
-use leptos::Scope;
-use regex_static::static_regex;
-use regex_static::Regex;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;

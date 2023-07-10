@@ -67,16 +67,92 @@ pub fn App(cx: Scope) -> impl IntoView {
         create_read_slice(cx, character, |c| c.species.to_string());
     let subspecies_slice =
         create_read_slice(cx, character, |c| c.subspecies.to_string());
+    let class_slice = create_read_slice(cx, character, |c| c.class.to_string());
+    let background_slice =
+        create_read_slice(cx, character, |c| c.background.to_string());
+    let level = create_read_slice(cx, character, CharacterDetails::level);
 
+    // Closure to reactively get the API definition of the current species.
     let current_species = move || {
-        species_slice.with(|species_slug| {
-            let slug = species_slug.clone();
-            if let Some(species_list) = api_data.species.read(cx) {
-                species_list.iter().find(|s| s.slug == slug).cloned()
-            } else {
-                None
-            }
-        })
+        let species = species_slice();
+        if let Some(species_list) = api_data.species.read(cx) {
+            species_list.iter().find(|s| s.slug == species).cloned()
+        } else {
+            None
+        }
+    };
+
+    // Closure to reactively get the API definition of the current
+    // subspecies. Only returns a result if the current subspecies is
+    // a subspecies of the current species.
+    let current_subspecies = move || {
+        let subspecies = subspecies_slice();
+        if let Some(species) = current_species() {
+            species
+                .subraces
+                .iter()
+                .find(|s| s.slug == subspecies)
+                .cloned()
+        } else {
+            None
+        }
+    };
+
+    // Closure to reactively get the API definition of the current class.
+    let current_class = move || {
+        let class = class_slice();
+        if let Some(class_list) = api_data.classes.read(cx) {
+            class_list.iter().find(|s| s.slug == class).cloned()
+        } else {
+            None
+        }
+    };
+
+    // Closure to reactively get the API definition of the current background.
+    let current_background = move || {
+        let background = background_slice();
+        if let Some(background_list) = api_data.backgrounds.read(cx) {
+            background_list
+                .iter()
+                .find(|s| s.slug == background)
+                .cloned()
+        } else {
+            None
+        }
+    };
+
+    let character_features = move || {
+        let mut features_out: Vec<Feature> = vec![];
+        // These are currently the only character properties
+        // that can supply features, so they're the only ones
+        // we need to listen too for now.
+        // Subclass should be added later.
+
+        // Species
+        if let Some(species_def) = current_species() {
+            features_out.append(&mut species_def.features());
+        }
+
+        // Subspecies
+        if let Some(subspecies_def) = current_subspecies() {
+            features_out.append(&mut subspecies_def.features());
+        }
+
+        // Class
+        if let Some(class) = current_class() {
+            features_out.append(&mut class.features());
+        }
+
+        // Background
+        if let Some(background) = current_background() {
+            //features_out.append(&mut background.features());
+        }
+
+        features_out
+            .iter()
+            .filter(|f| f.level <= level())
+            .cloned()
+            .collect::<Vec<Feature>>()
     };
 
     //let computed_asis = move || {
@@ -84,9 +160,6 @@ pub fn App(cx: Scope) -> impl IntoView {
     //    let subspecies = species_slice.get();
     //    let species_def =
     //};
-
-    let background =
-        create_read_slice(cx, character, |c| c.background.to_string());
 
     let subspecies_signals = create_slice(
         cx,
@@ -113,6 +186,7 @@ pub fn App(cx: Scope) -> impl IntoView {
                     // Right column
                     .child(RightColumn(
                         cx,
+                        character_features,
                         api_data,
                         //character,
                         create_read_slice(
@@ -297,21 +371,25 @@ fn AbilityScoreBox(
  *
  *===================================*/
 
-pub fn RightColumn(
+pub fn RightColumn<T>(
     cx: Scope,
+    features: T,
     api_data: FuturesWrapper,
     level: Signal<i32>,
     class: Signal<String>,
     species: Signal<String>,
     background: Signal<String>,
     subspecies_signals: (Signal<String>, SignalSetter<String>),
-) -> HtmlElement<Div> {
+) -> HtmlElement<Div>
+where
+    T: Fn() -> Vec<Feature> + 'static,
+{
     GridCol(cx).child(
         ScrollableContainerBox(cx)
             .child(h1(cx).child("Features:"))
             .child(FeaturePanel(
                 cx,
-                ClassTab(cx, api_data.classes, class, level),
+                ClassTab(cx, features),
                 SpeciesTab(cx, species, subspecies_signals, api_data.species),
                 BackgroundTab(cx, background, api_data.backgrounds),
             )),
@@ -320,22 +398,20 @@ pub fn RightColumn(
 
 /// Tab of the feature menu that renders the
 /// features from the character's class
-pub fn ClassTab(
-    cx: Scope,
-    class_future: Resource<(), Vec<Class>>,
-    class: Signal<String>,
-    level: Signal<i32>,
-) -> HtmlElement<Div> {
-    div(cx).child(move || {
-        class_future.with(cx, |classes| {
-            let class_op = classes.iter().find(|c| c.slug == class.get());
-            if let Some(class) = class_op {
-                DisplayClassFeatures(cx, class, level)
-            } else {
-                div(cx)
-            }
-        })
-    })
+pub fn ClassTab<T>(cx: Scope, features: T) -> HtmlElement<Div>
+where
+    T: Fn() -> Vec<Feature> + 'static,
+{
+    div(cx).child(div(cx).classes("accordion").id("featuresAccordion").child(
+        move || {
+            features()
+                .iter()
+                .filter(|f| f.source_slug.split(":").nth(0) == Some("class"))
+                .cloned()
+                .map(|f| FeatureItem(cx, &f))
+                .collect::<Vec<HtmlElement<Div>>>()
+        },
+    ))
 }
 
 pub fn DisplayClassFeatures(

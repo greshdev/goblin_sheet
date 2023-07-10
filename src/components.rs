@@ -1,4 +1,4 @@
-use leptos::{component, html::*, Scope};
+use leptos::{html::*, Scope};
 use uuid::Uuid;
 
 /* pub fn FlexRow(cx: Scope) -> HtmlElement<Div> {

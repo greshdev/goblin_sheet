@@ -17,6 +17,7 @@ impl Species {
                     name: "Ability Score Increase".to_string(),
                     desc: self.asi_desc.to_string(),
                     feature_type: FeatureType::Asi(char_asi),
+                    source_slug: format!("species:{}", self.slug),
                 });
             }
         }
@@ -24,6 +25,7 @@ impl Species {
         let desc_parts = self.traits.split("\n\n").collect::<Vec<&str>>();
 
         let mut current_feature = Feature::default();
+        current_feature.source_slug = format!("species:{}", self.slug);
         for line in desc_parts {
             let line = line.replace("**_", "***").replace("_**", "***");
             let re = Regex::new(r"\*\*\*(.+)\*\*\*(.+)");
@@ -33,6 +35,8 @@ impl Species {
                         if current_feature.name != "" {
                             features.push(current_feature);
                             current_feature = Feature::default();
+                            current_feature.source_slug =
+                                format!("species:{}", self.slug);
                         }
                         if let Some(group) = captures.get(1) {
                             current_feature.name = group.as_str().to_string();
@@ -68,11 +72,13 @@ impl Subspecies {
                     name: "Ability Score Increase".to_string(),
                     desc: self.asi_desc.to_string(),
                     feature_type: FeatureType::Asi(char_asi),
+                    source_slug: format!("subspecies:{}", self.slug),
                 });
             }
         }
 
         let mut current_feature = Feature::default();
+        current_feature.source_slug = format!("subspecies:{}", self.slug);
         for line in desc_parts {
             let line = line.replace("**_", "***").replace("_**", "***");
             let re = Regex::new(r"\*\*\*(.+)\*\*\*(.+)");
@@ -82,6 +88,8 @@ impl Subspecies {
                         if current_feature.name != "" {
                             features.push(current_feature);
                             current_feature = Feature::default();
+                            current_feature.source_slug =
+                                format!("subspecies:{}", self.slug);
                         }
                         if let Some(group) = captures.get(1) {
                             current_feature.name = group.as_str().to_string();
@@ -121,12 +129,14 @@ impl Class {
         let desc_parts = desc.split("\n\n").collect::<Vec<&str>>();
 
         let mut current_feature = Feature::default();
+        current_feature.source_slug = format!("class:{}", self.slug);
         for line in desc_parts {
             if line.len() > 3 && line[0..4].to_string() == "### ".to_string() {
                 if current_feature.name != "" {
                     features.push(current_feature);
                 }
                 current_feature = Feature::default();
+                current_feature.source_slug = format!("class:{}", self.slug);
                 //current_feature.level = 1;
                 let title = line.replace("### ", "");
                 current_feature.name = title.trim().to_string();
@@ -149,6 +159,7 @@ impl Class {
                                     name: current_feature.name.clone(),
                                     desc: String::new(),
                                     feature_type: FeatureType::None,
+                                    source_slug: format!("class:{}", self.slug),
                                 };
                                 features.push(current_feature);
                                 current_feature = new_feature;
@@ -174,15 +185,16 @@ impl Class {
     }
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Feature {
     pub name: String,
     pub desc: String,
     pub level: i32,
     pub feature_type: FeatureType,
+    pub source_slug: String,
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
 pub enum FeatureType {
     Asi(CharacterAsi),
     Proficiency,
