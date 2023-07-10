@@ -102,10 +102,10 @@ pub fn Tab(cx: Scope, id: &str, active: bool, text: &str) -> HtmlElement<Li> {
         .classes("nav-link")
         .id(id.to_string())
         .attr("data-bs-toggle", "tab")
-        .attr("data-bs-target", format!("#{}-pane", id.to_string()))
+        .attr("data-bs-target", format!("#{}-pane", id))
         .attr("type", "button")
         .attr("role", "tab")
-        .attr("aria-controls", format!("{}-pane", id.to_string()))
+        .attr("aria-controls", format!("{}-pane", id))
         .attr("aria-selected", "true")
         .child(text.to_string());
     if active {
@@ -130,7 +130,7 @@ pub fn TabPanel(
     };
     div(cx)
         .classes(classes)
-        .id(format!("{}-pane", id.to_string()))
+        .id(format!("{}-pane", id))
         .attr("role", "tabpanel")
         .attr("aria-labelledby", id.to_string())
         .attr("tabindex", "0")

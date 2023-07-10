@@ -123,13 +123,13 @@ fn SpeciesDropdown(
             let mut new_asis = new_species
                 .asi
                 .iter()
-                .map(|a| {
+                .flat_map(|a| {
                     let amount = a.value;
                     let attributes = &a.attributes;
                     let mut asis: Vec<CharacterAsi> = vec![];
                     for attribute in attributes {
                         let ability_score =
-                            AbilityScore::from_string(&attribute).unwrap();
+                            AbilityScore::from_string(attribute).unwrap();
                         asis.push(CharacterAsi {
                             score: ability_score,
                             source_slug: new_val.clone(),
@@ -138,7 +138,6 @@ fn SpeciesDropdown(
                     }
                     asis
                 })
-                .flatten()
                 .collect::<Vec<CharacterAsi>>();
             asis.append(&mut new_asis);
         }
@@ -173,7 +172,7 @@ fn SpeciesDropdown(
 
 fn ClassOptionList(
     cx: Scope,
-    classes: &Vec<Class>,
+    classes: &[Class],
     class: Signal<String>,
 ) -> OptionList {
     classes
@@ -264,7 +263,6 @@ pub fn LevelDropdown(
                 })
                 .child(
                     (1..=20)
-                        .into_iter()
                         .map(|i| {
                             option(cx)
                                 .prop("value", i)

@@ -52,6 +52,12 @@ impl CharacterDetails {
     }
 }
 
+impl Default for CharacterDetails {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub struct CharacterAsi {
     pub score: AbilityScore,
@@ -157,11 +163,13 @@ impl AbilityScores {
         (self.cha_score() - 10) / 2
     }
     pub fn new() -> Self {
-        //let test = CharacterAsi {
-        //    score: AbilityScore::Charisma,
-        //    source_slug: String::default(),
-        //    amount: 4,
-        //};
+        /*
+        let test = CharacterAsi {
+           score: AbilityScore::Charisma,
+           source_slug: String::default(),
+           amount: 4,
+        };
+        */
         Self {
             base_str: 10,
             base_dex: 10,
@@ -171,6 +179,12 @@ impl AbilityScores {
             base_cha: 10,
             level_1_asis: vec![],
         }
+    }
+}
+
+impl Default for AbilityScores {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -194,7 +208,7 @@ impl AbilityScore {
             AbilityScore::Charisma => "Charisma",
         }
     }
-    pub fn from_string(string: &String) -> Option<AbilityScore> {
+    pub fn from_string(string: &str) -> Option<AbilityScore> {
         match string.to_uppercase().as_str() {
             "STRENGTH" => Some(AbilityScore::Strength),
             "DEXTERITY" => Some(AbilityScore::Dexterity),

@@ -33,7 +33,7 @@ fn get_character() -> CharacterDetails {
             }
         }
     }
-    return CharacterDetails::new();
+    CharacterDetails::new()
 }
 
 fn write_character_to_local_storage(character: RwSignal<CharacterDetails>) {
@@ -381,7 +381,7 @@ pub fn ClassTab(cx: Scope, features: Signal<Vec<Feature>>) -> HtmlElement<Div> {
         move || {
             features()
                 .iter()
-                .filter(|f| f.source_slug.split(":").nth(0) == Some("class"))
+                .filter(|f| f.source_slug.split(':').next() == Some("class"))
                 .cloned()
                 .map(|f| FeatureItem(cx, &f))
                 .collect::<Vec<HtmlElement<Div>>>()
@@ -439,7 +439,7 @@ fn SpeciesDisplay(
         features.append(&mut subspecies.features());
     }
     //let subspecies_list_2 = species.subraces.clone();
-    let dropdown_maybe = if subspecies_list.len() > 0 {
+    let dropdown_maybe = if !subspecies_list.is_empty() {
         div(cx).child(SubspeciesDropdown(
             cx,
             subspecies_list,
@@ -450,7 +450,7 @@ fn SpeciesDisplay(
         div(cx)
     };
 
-    let features_div = if features.len() > 0 {
+    let features_div = if !features.is_empty() {
         div(cx).classes("accordion").child(
             features
                 .iter()
@@ -485,9 +485,10 @@ pub fn SubspeciesDropdown(
             subspecies
                 .iter()
                 .map(|ss| {
+                    // TODO: Look at whether this can be refactored
                     OptionWithDocTitle(
                         cx,
-                        &&get_subspecies(),
+                        &get_subspecies(),
                         &ss.slug,
                         &ss.name,
                         &ss.document_title,
@@ -506,7 +507,7 @@ pub fn BackgroundTab(
     div(cx).classes("accordion").child(move || {
         features()
             .iter()
-            .filter(|f| f.source_slug.split(":").nth(0) == Some("background"))
+            .filter(|f| f.source_slug.split(':').next() == Some("background"))
             .map(|f| {
                 AccordionItem(
                     cx,

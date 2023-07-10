@@ -19,6 +19,7 @@ pub enum FeatureType {
     Asi(CharacterAsi),
     Proficiency,
     #[default]
+    Fluff,
     None,
 }
 
@@ -41,15 +42,17 @@ impl Species {
 
         let desc_parts = self.traits.split("\n\n").collect::<Vec<&str>>();
 
-        let mut current_feature = Feature::default();
-        current_feature.source_slug = format!("species:{}", self.slug);
+        let mut current_feature = Feature {
+            source_slug: format!("species:{}", self.slug),
+            ..Default::default()
+        };
         for line in desc_parts {
             let line = line.replace("**_", "***").replace("_**", "***");
             let re = Regex::new(r"\*\*\*(.+)\*\*\*(.+)");
             if let Ok(re) = re {
                 match re.captures(&line) {
                     Some(captures) => {
-                        if current_feature.name != "" {
+                        if !current_feature.name.is_empty() {
                             features.push(current_feature);
                             current_feature = Feature::default();
                             current_feature.source_slug =
@@ -68,7 +71,7 @@ impl Species {
                 }
             }
         }
-        if current_feature.name != "" {
+        if !current_feature.name.is_empty() {
             features.push(current_feature);
         }
         features
@@ -94,15 +97,17 @@ impl Subspecies {
             }
         }
 
-        let mut current_feature = Feature::default();
-        current_feature.source_slug = format!("subspecies:{}", self.slug);
+        let mut current_feature = Feature {
+            source_slug: format!("subspecies:{}", self.slug),
+            ..Default::default()
+        };
         for line in desc_parts {
             let line = line.replace("**_", "***").replace("_**", "***");
             let re = Regex::new(r"\*\*\*(.+)\*\*\*(.+)");
             if let Ok(re) = re {
                 match re.captures(&line) {
                     Some(captures) => {
-                        if current_feature.name != "" {
+                        if !current_feature.name.is_empty() {
                             features.push(current_feature);
                             current_feature = Feature::default();
                             current_feature.source_slug =
@@ -121,7 +126,7 @@ impl Subspecies {
                 }
             }
         }
-        if current_feature.name != "" {
+        if !current_feature.name.is_empty() {
             features.push(current_feature);
         }
         features
@@ -145,11 +150,13 @@ impl Class {
         let desc = self.desc.replace("\n \n", "\n\n");
         let desc_parts = desc.split("\n\n").collect::<Vec<&str>>();
 
-        let mut current_feature = Feature::default();
-        current_feature.source_slug = format!("class:{}", self.slug);
+        let mut current_feature = Feature {
+            source_slug: format!("class:{}", self.slug),
+            ..Default::default()
+        };
         for line in desc_parts {
-            if line.len() > 3 && line[0..4].to_string() == "### ".to_string() {
-                if current_feature.name != "" {
+            if line.len() > 3 && line[0..4] == *"### " {
+                if !current_feature.name.is_empty() {
                     features.push(current_feature);
                 }
                 current_feature = Feature::default();
@@ -164,15 +171,17 @@ impl Class {
                     if let Some(captures) = matches {
                         if let Some(group) = captures.get(1) {
                             let string = group.as_str();
-                            let level =
-                                str::parse::<i32>(string).expect(&format!(
-                                    "Parsed a non-numeric level: {}",
-                                    string
-                                ));
+                            let level = str::parse::<i32>(string)
+                                .unwrap_or_else(|_| {
+                                    panic!(
+                                        "Parsed a non-numeric level: {}",
+                                        string
+                                    )
+                                });
 
                             if current_feature.level != 0 {
                                 let new_feature = Feature {
-                                    level: level,
+                                    level,
                                     name: current_feature.name.clone(),
                                     desc: String::new(),
                                     feature_type: FeatureType::None,
@@ -207,6 +216,15 @@ impl Background {
         let source_slug = format!("background:{}", self.slug);
         let mut features = vec![];
 
+        // Description of background
+        features.push(Feature {
+            name: format!("{} Decription", self.name),
+            desc: self.desc.to_string(),
+            level: 1,
+            feature_type: FeatureType::Fluff,
+            source_slug: source_slug.clone(),
+        });
+
         // Primary feature for background
         features.push(Feature {
             name: self.feature.to_string(),
@@ -218,10 +236,10 @@ impl Background {
 
         // Suggested characteristics for background
         features.push(Feature {
-            name: String::from("Characteristics"),
+            name: format!("{} Characteristics", self.name),
             desc: self.suggested_characteristics.to_string(),
             level: 1,
-            feature_type: FeatureType::None,
+            feature_type: FeatureType::Fluff,
             source_slug: source_slug.clone(),
         });
 

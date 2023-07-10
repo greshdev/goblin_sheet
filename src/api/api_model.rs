@@ -53,7 +53,7 @@ impl ApiAsi {
     pub fn get_asis(&self, source: &str) -> Vec<CharacterAsi> {
         let mut out = vec![];
         for att in &self.attributes {
-            if let Some(ability) = AbilityScore::from_string(&att) {
+            if let Some(ability) = AbilityScore::from_string(att) {
                 out.push(CharacterAsi {
                     score: ability,
                     source_slug: source.to_string(),
