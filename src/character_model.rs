@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -207,18 +205,6 @@ impl AbilityScore {
             _ => None,
         }
     }
-}
-
-enum Alignment {
-    LawfulGood,
-    NeutralGood,
-    ChaoticGood,
-    LawfulNeutral,
-    Neutral,
-    ChaoticNeutral,
-    LawfulEvil,
-    NeutralEvil,
-    ChaoticEvil,
 }
 
 fn xp_to_level(xp: i32) -> i32 {

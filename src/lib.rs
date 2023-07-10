@@ -154,6 +154,7 @@ pub fn App(cx: Scope) -> impl IntoView {
             .collect::<Vec<Feature>>()
     });
 
+    // TODO: Implement this
     //let computed_asis = move || {
     //    let species = species_slice.get();
     //    let subspecies = species_slice.get();
@@ -186,7 +187,6 @@ pub fn App(cx: Scope) -> impl IntoView {
                     .child(RightColumn(
                         cx,
                         character_features,
-                        api_data,
                         current_species,
                         subspecies_signals,
                     )),
@@ -359,7 +359,6 @@ fn AbilityScoreBox(
 pub fn RightColumn(
     cx: Scope,
     features: Signal<Vec<Feature>>,
-    api_data: FuturesWrapper,
     current_species: Signal<Option<Species>>,
     subspecies_signals: (Signal<String>, SignalSetter<String>),
 ) -> HtmlElement<Div> {
