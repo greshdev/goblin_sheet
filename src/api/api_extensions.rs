@@ -1,3 +1,4 @@
+use leptos::log;
 use regex_static::{static_regex, Regex};
 use serde::{Deserialize, Serialize};
 
@@ -157,6 +158,9 @@ impl Class {
         for line in desc_parts {
             if line.len() > 3 && line[0..4] == *"### " {
                 if !current_feature.name.is_empty() {
+                    if current_feature.level == 0 {
+                        current_feature.level = 1;
+                    }
                     features.push(current_feature);
                 }
                 current_feature = Feature::default();
@@ -165,6 +169,8 @@ impl Class {
                 let title = line.replace("### ", "");
                 current_feature.name = title.trim().to_string();
             } else {
+                // Check if this line of the feature description mentions
+                // a level at which it applies.
                 for pattern in &patterns {
                     let matches = pattern.captures(line);
 
@@ -178,7 +184,6 @@ impl Class {
                                         string
                                     )
                                 });
-
                             if current_feature.level != 0 {
                                 let new_feature = Feature {
                                     level,
@@ -200,10 +205,10 @@ impl Class {
                     current_feature.desc += "\n\n";
                 }
                 current_feature.desc += line.trim();
-                if current_feature.level == 0 {
-                    current_feature.level = 1;
-                }
             }
+        }
+        if current_feature.level == 0 {
+            current_feature.level = 1;
         }
         features.push(current_feature);
         features.sort_by(|a, b| a.level.cmp(&b.level));
