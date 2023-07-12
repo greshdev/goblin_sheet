@@ -1,5 +1,5 @@
 [package]
-name = "char_sheet_leptos"
+name = "goblin_sheet"
 version = "0.1.0"
 edition = "2021"
 license-file = "LICENSE.txt"
@@ -21,8 +21,8 @@ web-sys = { version = "0.3.64", features = ["Storage"] }
 [dependencies.uuid]
 version = "1.4.0"
 features = [
-    "v4",                # Lets you generate random UUIDs
-    "fast-rng",          # Use a faster (but still sufficiently random) RNG
-    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
+    "v4",                
+    "fast-rng",          
+    "macro-diagnostics", 
     "js"
 ]

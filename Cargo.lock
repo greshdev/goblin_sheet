@@ -251,23 +251,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "char_sheet_leptos"
-version = "0.1.0"
-dependencies = [
- "comrak",
- "console_error_panic_hook",
- "console_log",
- "leptos",
- "log",
- "regex_static",
- "reqwasm",
- "serde",
- "serde_json",
- "uuid",
- "web-sys",
-]
-
-[[package]]
 name = "ciborium"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -812,6 +795,23 @@ dependencies = [
  "serde",
  "serde_json",
  "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
+name = "goblin_sheet"
+version = "0.1.0"
+dependencies = [
+ "comrak",
+ "console_error_panic_hook",
+ "console_log",
+ "leptos",
+ "log",
+ "regex_static",
+ "reqwasm",
+ "serde",
+ "serde_json",
+ "uuid",
  "web-sys",
 ]
 

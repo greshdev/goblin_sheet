@@ -1,4 +1,4 @@
-use char_sheet_leptos::App;
+use goblin_sheet::App;
 use leptos::*;
 
 fn main() {
