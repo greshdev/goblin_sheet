@@ -1,3 +1,4 @@
+use leptos::{Signal, SignalGet};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -37,9 +38,9 @@ impl CharacterDetails {
     pub fn set_base_hp(&mut self, hp: i32) {
         self.base_hp = hp;
     }
-    pub fn max_hp(&self) -> i32 {
-        self.base_hp + (self.ability_scores.con_mod() * self.level())
-    }
+    //pub fn max_hp(&self) -> i32 {
+    //    self.base_hp + (self.ability_scores.con_mod() * self.level())
+    //}
     pub fn change_species(&mut self, new: String) {
         self.species = new;
         self.subspecies = String::new();
@@ -74,7 +75,7 @@ impl CharacterAsi {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq, Clone)]
 pub struct AbilityScores {
     pub base_str: i32,
     pub base_dex: i32,
@@ -82,85 +83,10 @@ pub struct AbilityScores {
     pub base_wis: i32,
     pub base_int: i32,
     pub base_cha: i32,
-    pub level_1_asis: Vec<CharacterAsi>,
 }
-
 impl AbilityScores {
-    pub fn all_asis(&self) -> Vec<CharacterAsi> {
-        self.level_1_asis.clone()
-    }
-    fn asis_for_score(&self, score: AbilityScore) -> Vec<CharacterAsi> {
-        self.all_asis()
-            .iter()
-            .filter(|a| a.score == score)
-            .cloned()
-            .collect::<Vec<CharacterAsi>>()
-    }
-    pub fn str_score(&self) -> i32 {
-        let asi_boost: i32 = self
-            .asis_for_score(AbilityScore::Strength)
-            .iter()
-            .map(|a| a.amount)
-            .sum();
-        self.base_str + asi_boost
-    }
-    pub fn dex_score(&self) -> i32 {
-        let asi_boost: i32 = self
-            .asis_for_score(AbilityScore::Dexterity)
-            .iter()
-            .map(|a| a.amount)
-            .sum();
-        self.base_dex + asi_boost
-    }
-    pub fn con_score(&self) -> i32 {
-        let asi_boost: i32 = self
-            .asis_for_score(AbilityScore::Constitution)
-            .iter()
-            .map(|a| a.amount)
-            .sum();
-        self.base_con + asi_boost
-    }
-    pub fn wis_score(&self) -> i32 {
-        let asi_boost: i32 = self
-            .asis_for_score(AbilityScore::Wisdom)
-            .iter()
-            .map(|a| a.amount)
-            .sum();
-        self.base_wis + asi_boost
-    }
-    pub fn int_score(&self) -> i32 {
-        let asi_boost: i32 = self
-            .asis_for_score(AbilityScore::Intelligence)
-            .iter()
-            .map(|a| a.amount)
-            .sum();
-        self.base_int + asi_boost
-    }
-    pub fn cha_score(&self) -> i32 {
-        let asi_boost: i32 = self
-            .asis_for_score(AbilityScore::Charisma)
-            .iter()
-            .map(|a| a.amount)
-            .sum();
-        self.base_cha + asi_boost
-    }
-    pub fn str_mod(&self) -> i32 {
-        (self.str_score() - 10) / 2
-    }
-    pub fn dex_mod(&self) -> i32 {
-        (self.dex_score() - 10) / 2
-    }
-    pub fn con_mod(&self) -> i32 {
-        (self.con_score() - 10) / 2
-    }
-    pub fn wis_mod(&self) -> i32 {
-        (self.wis_score() - 10) / 2
-    }
-    pub fn int_mod(&self) -> i32 {
-        (self.int_score() - 10) / 2
-    }
-    pub fn cha_mod(&self) -> i32 {
-        (self.cha_score() - 10) / 2
+    pub fn score_to_mod(score: i32) -> i32 {
+        (score - 10) / 2
     }
     pub fn new() -> Self {
         /*
@@ -177,14 +103,100 @@ impl AbilityScores {
             base_wis: 10,
             base_int: 10,
             base_cha: 10,
-            level_1_asis: vec![],
         }
     }
 }
-
 impl Default for AbilityScores {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct AbilityScoresReactive {
+    pub ability_scores: Signal<AbilityScores>,
+    pub asis: Signal<Vec<CharacterAsi>>,
+}
+
+impl AbilityScoresReactive {
+    pub fn all_asis(&self) -> Vec<CharacterAsi> {
+        self.asis.get()
+    }
+    fn asis_for_score(&self, score: AbilityScore) -> Vec<CharacterAsi> {
+        self.all_asis()
+            .iter()
+            .filter(|a| a.score == score)
+            .cloned()
+            .collect::<Vec<CharacterAsi>>()
+    }
+    pub fn str_score(&self) -> i32 {
+        let asi_boost: i32 = self
+            .asis_for_score(AbilityScore::Strength)
+            .iter()
+            .map(|a| a.amount)
+            .sum();
+        self.ability_scores.get().base_str + asi_boost
+    }
+    pub fn dex_score(&self) -> i32 {
+        let asi_boost: i32 = self
+            .asis_for_score(AbilityScore::Dexterity)
+            .iter()
+            .map(|a| a.amount)
+            .sum();
+        self.ability_scores.get().base_dex + asi_boost
+    }
+    pub fn con_score(&self) -> i32 {
+        let asi_boost: i32 = self
+            .asis_for_score(AbilityScore::Constitution)
+            .iter()
+            .map(|a| a.amount)
+            .sum();
+        self.ability_scores.get().base_con + asi_boost
+    }
+    pub fn wis_score(&self) -> i32 {
+        let asi_boost: i32 = self
+            .asis_for_score(AbilityScore::Wisdom)
+            .iter()
+            .map(|a| a.amount)
+            .sum();
+        self.ability_scores.get().base_wis + asi_boost
+    }
+    pub fn int_score(&self) -> i32 {
+        let asi_boost: i32 = self
+            .asis_for_score(AbilityScore::Intelligence)
+            .iter()
+            .map(|a| a.amount)
+            .sum();
+        self.ability_scores.get().base_int + asi_boost
+    }
+    pub fn cha_score(&self) -> i32 {
+        let asi_boost: i32 = self
+            .asis_for_score(AbilityScore::Charisma)
+            .iter()
+            .map(|a| a.amount)
+            .sum();
+        self.ability_scores.get().base_cha + asi_boost
+    }
+    pub fn str_mod(&self) -> i32 {
+        Self::score_to_mod(self.str_score())
+    }
+    pub fn dex_mod(&self) -> i32 {
+        Self::score_to_mod(self.dex_score())
+    }
+    pub fn con_mod(&self) -> i32 {
+        Self::score_to_mod(self.con_score())
+    }
+    pub fn wis_mod(&self) -> i32 {
+        Self::score_to_mod(self.wis_score())
+    }
+    pub fn int_mod(&self) -> i32 {
+        Self::score_to_mod(self.int_score())
+    }
+    pub fn cha_mod(&self) -> i32 {
+        Self::score_to_mod(self.cha_score())
+    }
+    pub fn score_to_mod(score: i32) -> i32 {
+        (score - 10) / 2
     }
 }
 

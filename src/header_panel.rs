@@ -3,7 +3,7 @@ use leptos::{html::*, *};
 use crate::{
     api::api_model::{Class, *},
     api::*,
-    character_model::{AbilityScore, CharacterAsi, CharacterDetails},
+    character_model::CharacterDetails,
     components::*,
     OptionList,
 };
@@ -68,12 +68,6 @@ pub fn Header(
                             futures.species,
                             species,
                             set_species,
-                            create_slice(
-                                cx,
-                                character,
-                                |c| c.ability_scores.level_1_asis.clone(),
-                                |c, v| c.ability_scores.level_1_asis = v,
-                            ),
                         ))),
                 )
                 .child(
@@ -101,48 +95,9 @@ fn SpeciesDropdown(
     future: Resource<(), Vec<Species>>,
     species: Signal<String>,
     set_species: SignalSetter<String>,
-    (get_level_one_asis, set_level_one_asis): (
-        Signal<Vec<CharacterAsi>>,
-        SignalSetter<Vec<CharacterAsi>>,
-    ),
 ) -> impl IntoView {
-    // ALTERNATIVE ASI idea: make ASIs a feature modifier.
     let change_species = move |e| {
-        let new_val = event_target_value(&e);
-        let mut asis = get_level_one_asis()
-            .iter()
-            .filter(|f| f.source_slug != species())
-            //.filter(|f| f.source_slug != subspecies())
-            .cloned()
-            .collect::<Vec<CharacterAsi>>();
-
-        let new_species = future.with(cx, |list| {
-            list.iter().find(|v| v.slug == new_val).cloned().unwrap()
-        });
-        if let Some(new_species) = new_species {
-            let mut new_asis = new_species
-                .asi
-                .iter()
-                .flat_map(|a| {
-                    let amount = a.value;
-                    let attributes = &a.attributes;
-                    let mut asis: Vec<CharacterAsi> = vec![];
-                    for attribute in attributes {
-                        let ability_score =
-                            AbilityScore::from_string(attribute).unwrap();
-                        asis.push(CharacterAsi {
-                            score: ability_score,
-                            source_slug: new_val.clone(),
-                            amount,
-                        });
-                    }
-                    asis
-                })
-                .collect::<Vec<CharacterAsi>>();
-            asis.append(&mut new_asis);
-        }
-        set_level_one_asis(asis);
-        set_species(new_val.clone());
+        set_species(event_target_value(&e));
     };
     CustomSelect(cx)
         //.classes("mb-3")

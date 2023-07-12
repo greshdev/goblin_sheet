@@ -8,6 +8,8 @@ mod markdown;
 
 use crate::api::api_model::Class;
 use crate::api::FuturesWrapper;
+use crate::character_model::AbilityScoresReactive;
+use crate::character_model::CharacterAsi;
 use crate::character_model::CharacterDetails;
 use crate::components::*;
 use crate::markdown::*;
@@ -15,6 +17,7 @@ use api::api_extensions::*;
 
 use api::api_model::Species;
 use api::api_model::Subspecies;
+use character_model::AbilityScores;
 use header_panel::Header;
 use leptos::{component, IntoView, Scope};
 use leptos::{ev, html::*, *};
@@ -84,7 +87,7 @@ pub fn App(cx: Scope) -> impl IntoView {
     // Closure to reactively get the API definition of the current
     // subspecies. Only returns a result if the current subspecies is
     // a subspecies of the current species.
-    let current_subspecies = move || {
+    let current_subspecies = Signal::derive(cx, move || {
         let subspecies = subspecies_slice();
         if let Some(species) = current_species() {
             species
@@ -95,20 +98,20 @@ pub fn App(cx: Scope) -> impl IntoView {
         } else {
             None
         }
-    };
+    });
 
     // Closure to reactively get the API definition of the current class.
-    let current_class = move || {
+    let current_class = Signal::derive(cx, move || {
         let class = class_slice();
         if let Some(class_list) = api_data.classes.read(cx) {
             class_list.iter().find(|s| s.slug == class).cloned()
         } else {
             None
         }
-    };
+    });
 
     // Closure to reactively get the API definition of the current background.
-    let current_background = move || {
+    let current_background = Signal::derive(cx, move || {
         let background = background_slice();
         if let Some(background_list) = api_data.backgrounds.read(cx) {
             background_list
@@ -118,7 +121,7 @@ pub fn App(cx: Scope) -> impl IntoView {
         } else {
             None
         }
-    };
+    });
 
     let character_features = Signal::derive(cx, move || {
         let mut features_out: Vec<Feature> = vec![];
@@ -134,7 +137,8 @@ pub fn App(cx: Scope) -> impl IntoView {
 
         // Subspecies
         if let Some(subspecies_def) = current_subspecies() {
-            features_out.append(&mut subspecies_def.features());
+            let f = &mut subspecies_def.features();
+            features_out.append(f);
         }
 
         // Class
@@ -154,12 +158,26 @@ pub fn App(cx: Scope) -> impl IntoView {
             .collect::<Vec<Feature>>()
     });
 
-    // TODO: Implement this
-    //let computed_asis = move || {
-    //    let species = species_slice.get();
-    //    let subspecies = species_slice.get();
-    //    let species_def =
-    //};
+    let current_asis = Signal::derive(cx, move || {
+        character_features()
+            .iter()
+            .filter_map(|f| {
+                if let FeatureType::Asi(asi) = &f.feature_type {
+                    Some(asi)
+                } else {
+                    None
+                }
+            })
+            .cloned()
+            .collect::<Vec<CharacterAsi>>()
+    });
+
+    let ability_scores = AbilityScoresReactive {
+        ability_scores: create_read_slice(cx, character, |c| {
+            c.ability_scores.clone()
+        }),
+        asis: current_asis,
+    };
 
     let subspecies_signals = create_slice(
         cx,
@@ -174,7 +192,12 @@ pub fn App(cx: Scope) -> impl IntoView {
     vec![
         Header(cx, character, api_data),
         // Stats row
-        div(cx).classes("container").child(StatsRow(cx, character)),
+        div(cx).classes("container").child(StatsRow2(
+            cx,
+            character,
+            ability_scores,
+        )),
+        //div(cx).classes("container").child(StatsRow(cx, character)),
         div(cx)
             .attr("class", "container")
             // Left column
@@ -195,160 +218,6 @@ pub fn App(cx: Scope) -> impl IntoView {
 }
 
 type OptionList = Vec<HtmlElement<Option_>>;
-
-pub fn StatsRow(
-    cx: Scope,
-    character: RwSignal<CharacterDetails>,
-) -> HtmlElement<Div> {
-    HorizontalPanel(cx).child(
-        GridRow(cx)
-            .child(GridCol(cx).child(AbilityScoreBox(
-                cx,
-                "Strength",
-                create_read_slice(cx, character, |c| {
-                    c.ability_scores.str_score()
-                }),
-                create_slice(
-                    cx,
-                    character,
-                    |c| c.ability_scores.base_str,
-                    |c, v| c.ability_scores.base_str = v,
-                ),
-                create_read_slice(cx, character, |c| {
-                    c.ability_scores.str_mod()
-                }),
-            )))
-            .child(GridCol(cx).child(AbilityScoreBox(
-                cx,
-                "Dexterity",
-                create_read_slice(cx, character, |c| {
-                    c.ability_scores.dex_score()
-                }),
-                create_slice(
-                    cx,
-                    character,
-                    |c| c.ability_scores.base_dex,
-                    |c, v| c.ability_scores.base_dex = v,
-                ),
-                create_read_slice(cx, character, |c| {
-                    c.ability_scores.dex_mod()
-                }),
-            )))
-            .child(GridCol(cx).child(AbilityScoreBox(
-                cx,
-                "Constitution",
-                create_read_slice(cx, character, |c| {
-                    c.ability_scores.con_score()
-                }),
-                create_slice(
-                    cx,
-                    character,
-                    |c| c.ability_scores.base_con,
-                    |c, v| c.ability_scores.base_con = v,
-                ),
-                create_read_slice(cx, character, |c| {
-                    c.ability_scores.con_mod()
-                }),
-            )))
-            .child(GridCol(cx).child(AbilityScoreBox(
-                cx,
-                "Wisdom",
-                create_read_slice(cx, character, |c| {
-                    c.ability_scores.wis_score()
-                }),
-                create_slice(
-                    cx,
-                    character,
-                    |c| c.ability_scores.base_wis,
-                    |c, v| c.ability_scores.base_wis = v,
-                ),
-                create_read_slice(cx, character, |c| {
-                    c.ability_scores.wis_mod()
-                }),
-            )))
-            .child(GridCol(cx).child(AbilityScoreBox(
-                cx,
-                "Intelligence",
-                create_read_slice(cx, character, |c| {
-                    c.ability_scores.int_score()
-                }),
-                create_slice(
-                    cx,
-                    character,
-                    |c| c.ability_scores.base_int,
-                    |c, v| c.ability_scores.base_int = v,
-                ),
-                create_read_slice(cx, character, |c| {
-                    c.ability_scores.int_mod()
-                }),
-            )))
-            .child(GridCol(cx).child(AbilityScoreBox(
-                cx,
-                "Charisma",
-                create_read_slice(cx, character, |c| {
-                    c.ability_scores.cha_score()
-                }),
-                create_slice(
-                    cx,
-                    character,
-                    |c| c.ability_scores.base_cha,
-                    |c, v| c.ability_scores.base_cha = v,
-                ),
-                create_read_slice(cx, character, |c| {
-                    c.ability_scores.cha_mod()
-                }),
-            ))),
-    )
-}
-
-fn AbilityScoreBox(
-    cx: Scope,
-    score_name: &str,
-    score: Signal<i32>,
-    (score_base, set_score_base): (Signal<i32>, SignalSetter<i32>),
-    score_mod: Signal<i32>,
-) -> HtmlElement<Div> {
-    let (edit_mode, set_edit_mode) = create_signal(cx, false);
-    let display_score =
-        move || if edit_mode() { score_base() } else { score() };
-    div(cx)
-        .classes("d-flex flex-column")
-        .child(score_name.to_string())
-        .child(
-            div(cx)
-                .classes("border rounded text-centered mx-auto")
-                .style("width", "5vw")
-                .style("height", "5vw")
-                .style("text-align", "center")
-                .child(h2(cx).child(score_mod).classes("mt-1")),
-        )
-        .child(
-            input(cx)
-                //div(cx)
-                .classes("border rounded mx-auto")
-                .style("width", "2.5vw")
-                .style("height", "2.5vw")
-                .style("margin-top", "-1.5vw")
-                .style("text-align", "center")
-                //.classes("p-1")
-                .style("background", "#212529")
-                .prop("value", display_score)
-                //.child(display_score)
-                // When we "focus" on the input, switch to edit mode
-                // and to show the "base" score
-                .on(ev::focusin, move |_| set_edit_mode(true))
-                // When we lose focus, switch back
-                .on(ev::focusout, move |_| set_edit_mode(false))
-                .on(ev::change, move |e| {
-                    let val = event_target_value(&e);
-                    if let Ok(num) = str::parse::<i32>(&val) {
-                        set_score_base(num)
-                    } else {
-                        set_score_base(10)
-                    }
-                }),
-        )
-}
 
 /*====================================
  *
@@ -438,7 +307,6 @@ fn SpeciesDisplay(
     if let Some(subspecies) = my_subspecies {
         features.append(&mut subspecies.features());
     }
-    //let subspecies_list_2 = species.subraces.clone();
     let dropdown_maybe = if !subspecies_list.is_empty() {
         div(cx).child(SubspeciesDropdown(
             cx,
@@ -557,4 +425,131 @@ pub fn FeatureItem(cx: Scope, f: &Feature) -> HtmlElement<Div> {
         div(cx).child(format!("{} (Level {})", f.name.clone(), f.level)),
         div(cx).inner_html(parse_markdown_table(&f.desc)),
     )
+}
+
+pub fn StatsRow2(
+    cx: Scope,
+    character: RwSignal<CharacterDetails>,
+    ability_scores: AbilityScoresReactive,
+) -> HtmlElement<Div> {
+    HorizontalPanel(cx).child(
+        GridRow(cx)
+            .child(GridCol(cx).child(AbilityScoreBox2(
+                cx,
+                "Strength",
+                Signal::derive(cx, move || ability_scores.str_score()),
+                create_slice(
+                    cx,
+                    character,
+                    |c| c.ability_scores.base_str,
+                    |c, v| c.ability_scores.base_str = v,
+                ),
+            )))
+            .child(GridCol(cx).child(AbilityScoreBox2(
+                cx,
+                "Dexterity",
+                Signal::derive(cx, move || ability_scores.dex_score()),
+                create_slice(
+                    cx,
+                    character,
+                    |c| c.ability_scores.base_dex,
+                    |c, v| c.ability_scores.base_dex = v,
+                ),
+            )))
+            .child(GridCol(cx).child(AbilityScoreBox2(
+                cx,
+                "Constitution",
+                Signal::derive(cx, move || ability_scores.con_score()),
+                create_slice(
+                    cx,
+                    character,
+                    |c| c.ability_scores.base_con,
+                    |c, v| c.ability_scores.base_con = v,
+                ),
+            )))
+            .child(GridCol(cx).child(AbilityScoreBox2(
+                cx,
+                "Wisdom",
+                Signal::derive(cx, move || ability_scores.wis_score()),
+                create_slice(
+                    cx,
+                    character,
+                    |c| c.ability_scores.base_wis,
+                    |c, v| c.ability_scores.base_wis = v,
+                ),
+            )))
+            .child(GridCol(cx).child(AbilityScoreBox2(
+                cx,
+                "Intelligence",
+                Signal::derive(cx, move || ability_scores.int_score()),
+                create_slice(
+                    cx,
+                    character,
+                    |c| c.ability_scores.base_int,
+                    |c, v| c.ability_scores.base_int = v,
+                ),
+            )))
+            .child(GridCol(cx).child(AbilityScoreBox2(
+                cx,
+                "Charisma",
+                Signal::derive(cx, move || ability_scores.cha_score()),
+                create_slice(
+                    cx,
+                    character,
+                    |c| c.ability_scores.base_cha,
+                    |c, v| c.ability_scores.base_cha = v,
+                ),
+            ))),
+    )
+}
+fn AbilityScoreBox2(
+    cx: Scope,
+    score_name: &str,
+    score: Signal<i32>,
+    (score_base, set_score_base): (Signal<i32>, SignalSetter<i32>),
+) -> HtmlElement<Div> {
+    let score_mod =
+        Signal::derive(cx, move || AbilityScores::score_to_mod(score()));
+
+    let (edit_mode, set_edit_mode) = create_signal(cx, false);
+    let display_score =
+        move || if edit_mode() { score_base() } else { score() };
+
+    div(cx)
+        .classes("d-flex flex-column")
+        .child(score_name.to_string())
+        .child(
+            div(cx)
+                .classes("border rounded text-centered mx-auto")
+                .style("width", "5vw")
+                .style("height", "5vw")
+                .style("text-align", "center")
+                .child(h2(cx).child(score_mod).classes("mt-1")),
+        )
+        .child(
+            input(cx)
+                //div(cx)
+                .classes("border rounded mx-auto")
+                .style("width", "2.5vw")
+                .style("height", "2.5vw")
+                .style("margin-top", "-1.5vw")
+                .style("text-align", "center")
+                //.classes("p-1")
+                .style("background", "#212529")
+                .prop("value", display_score)
+                //.child(display_score)
+                // When we "focus" on the input, switch to edit mode
+                // and to show the "base" score
+                .on(ev::focusin, move |_| set_edit_mode(true))
+                // When we lose focus, switch back
+                .on(ev::focusout, move |_| set_edit_mode(false))
+                .on(ev::change, move |e| {
+                    let val = event_target_value(&e);
+                    if let Ok(num) = str::parse::<i32>(&val) {
+                        set_score_base(num)
+                    } else {
+                        set_score_base(10)
+                    }
+                }),
+        )
 }
