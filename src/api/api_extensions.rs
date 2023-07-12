@@ -1,4 +1,3 @@
-use leptos::log;
 use regex_static::{static_regex, Regex};
 use serde::{Deserialize, Serialize};
 
@@ -48,16 +47,21 @@ impl Species {
             ..Default::default()
         };
         for line in desc_parts {
+            // Open5e's data is somewhat inconsistently formatted currently.
+            // Here we clean up the data a bit by standardizing all bold-itallics
+            // formatting.
             let line = line.replace("**_", "***").replace("_**", "***");
+            // The feature name will be in the first phrase in bold-italics.
             let re = Regex::new(r"\*\*\*(.+)\*\*\*(.+)");
             if let Ok(re) = re {
                 match re.captures(&line) {
                     Some(captures) => {
                         if !current_feature.name.is_empty() {
                             features.push(current_feature);
-                            current_feature = Feature::default();
-                            current_feature.source_slug =
-                                format!("species:{}", self.slug);
+                            current_feature = Feature {
+                                source_slug: format!("species:{}", self.slug),
+                                ..Default::default()
+                            };
                         }
                         if let Some(group) = captures.get(1) {
                             current_feature.name = group.as_str().to_string();
@@ -156,18 +160,21 @@ impl Class {
             ..Default::default()
         };
         for line in desc_parts {
+            // In the Open5e dataset, features start with a level 3 header.
             if line.len() > 3 && line[0..4] == *"### " {
                 if !current_feature.name.is_empty() {
+                    // If we haven't encountered any mention of a level
+                    // yet for this feature, assume it's level one.
                     if current_feature.level == 0 {
                         current_feature.level = 1;
                     }
                     features.push(current_feature);
                 }
-                current_feature = Feature::default();
-                current_feature.source_slug = format!("class:{}", self.slug);
-                //current_feature.level = 1;
-                let title = line.replace("### ", "");
-                current_feature.name = title.trim().to_string();
+                current_feature = Feature {
+                    name: line.replace("### ", "").trim().to_string(),
+                    source_slug: format!("class:{}", self.slug),
+                    ..Default::default()
+                };
             } else {
                 // Check if this line of the feature description mentions
                 // a level at which it applies.
@@ -207,6 +214,8 @@ impl Class {
                 current_feature.desc += line.trim();
             }
         }
+        // If we haven't encountered any mention of a level
+        // yet for this feature, assume it's level one.
         if current_feature.level == 0 {
             current_feature.level = 1;
         }
