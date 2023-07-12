@@ -1,6 +1,7 @@
 # Goblin Sheet
 Simple web-based character sheet for the fifth edition of the 
-world's most prolific fantasy roleplaying game.
+world's most prolific fantasy roleplaying game. Very much still
+a work-in-progress.
 
 Built in Rust with the [Leptos](https://github.com/leptos-rs/leptos)
 framework. 5e data is pulled from the [Open5e](https://open5e.com/)
