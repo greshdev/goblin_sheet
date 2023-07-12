@@ -192,7 +192,7 @@ pub fn App(cx: Scope) -> impl IntoView {
     vec![
         Header(cx, character, api_data),
         // Stats row
-        div(cx).classes("container").child(StatsRow2(
+        div(cx).classes("container").child(StatsRow(
             cx,
             character,
             ability_scores,
@@ -427,14 +427,14 @@ pub fn FeatureItem(cx: Scope, f: &Feature) -> HtmlElement<Div> {
     )
 }
 
-pub fn StatsRow2(
+pub fn StatsRow(
     cx: Scope,
     character: RwSignal<CharacterDetails>,
     ability_scores: AbilityScoresReactive,
 ) -> HtmlElement<Div> {
     HorizontalPanel(cx).child(
         GridRow(cx)
-            .child(GridCol(cx).child(AbilityScoreBox2(
+            .child(GridCol(cx).child(AbilityScoreBox(
                 cx,
                 "Strength",
                 Signal::derive(cx, move || ability_scores.str_score()),
@@ -445,7 +445,7 @@ pub fn StatsRow2(
                     |c, v| c.ability_scores.base_str = v,
                 ),
             )))
-            .child(GridCol(cx).child(AbilityScoreBox2(
+            .child(GridCol(cx).child(AbilityScoreBox(
                 cx,
                 "Dexterity",
                 Signal::derive(cx, move || ability_scores.dex_score()),
@@ -456,7 +456,7 @@ pub fn StatsRow2(
                     |c, v| c.ability_scores.base_dex = v,
                 ),
             )))
-            .child(GridCol(cx).child(AbilityScoreBox2(
+            .child(GridCol(cx).child(AbilityScoreBox(
                 cx,
                 "Constitution",
                 Signal::derive(cx, move || ability_scores.con_score()),
@@ -467,7 +467,7 @@ pub fn StatsRow2(
                     |c, v| c.ability_scores.base_con = v,
                 ),
             )))
-            .child(GridCol(cx).child(AbilityScoreBox2(
+            .child(GridCol(cx).child(AbilityScoreBox(
                 cx,
                 "Wisdom",
                 Signal::derive(cx, move || ability_scores.wis_score()),
@@ -478,7 +478,7 @@ pub fn StatsRow2(
                     |c, v| c.ability_scores.base_wis = v,
                 ),
             )))
-            .child(GridCol(cx).child(AbilityScoreBox2(
+            .child(GridCol(cx).child(AbilityScoreBox(
                 cx,
                 "Intelligence",
                 Signal::derive(cx, move || ability_scores.int_score()),
@@ -489,7 +489,7 @@ pub fn StatsRow2(
                     |c, v| c.ability_scores.base_int = v,
                 ),
             )))
-            .child(GridCol(cx).child(AbilityScoreBox2(
+            .child(GridCol(cx).child(AbilityScoreBox(
                 cx,
                 "Charisma",
                 Signal::derive(cx, move || ability_scores.cha_score()),
@@ -502,7 +502,7 @@ pub fn StatsRow2(
             ))),
     )
 }
-fn AbilityScoreBox2(
+fn AbilityScoreBox(
     cx: Scope,
     score_name: &str,
     score: Signal<i32>,
@@ -520,19 +520,20 @@ fn AbilityScoreBox2(
         .child(score_name.to_string())
         .child(
             div(cx)
-                .classes("border rounded text-centered mx-auto")
-                .style("width", "5vw")
-                .style("height", "5vw")
+                .classes("border rounded mx-auto d-flex align-items-center justify-content-center")
+                .child(div(cx))
+                .style("width", "4rem")
+                .style("height", "4rem")
                 .style("text-align", "center")
-                .child(h2(cx).child(score_mod).classes("mt-1")),
+                .child(h2(cx).child(score_mod).style("margin-top", "-10%")),
         )
         .child(
             input(cx)
                 //div(cx)
                 .classes("border rounded mx-auto")
-                .style("width", "2.5vw")
-                .style("height", "2.5vw")
-                .style("margin-top", "-1.5vw")
+                .style("width", "2rem")
+                .style("height", "2rem")
+                .style("margin-top", "-1rem")
                 .style("text-align", "center")
                 //.classes("p-1")
                 .style("background", "#212529")
