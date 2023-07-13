@@ -179,6 +179,21 @@ pub fn App(cx: Scope) -> impl IntoView {
         asis: current_asis,
     };
 
+    let proficiencies = Signal::derive(cx, move || {
+        character_features()
+            .iter()
+            .filter_map(|f| {
+                if let FeatureType::Proficiency(profs) = &f.feature_type {
+                    Some(profs)
+                } else {
+                    None
+                }
+            })
+            .flatten()
+            .cloned()
+            .collect::<Vec<String>>()
+    });
+
     let subspecies_signals = create_slice(
         cx,
         character,
@@ -197,13 +212,23 @@ pub fn App(cx: Scope) -> impl IntoView {
             character,
             ability_scores,
         )),
-        //div(cx).classes("container").child(StatsRow(cx, character)),
         div(cx)
             .attr("class", "container")
             // Left column
             .child(
                 GridRow(cx)
-                    .child(GridCol(cx).child(ScrollableContainerBox(cx)))
+                    .child(
+                        GridCol(cx).child(
+                            ScrollableContainerBox(cx)
+                                .child(h1(cx).child("Proficiencies:"))
+                                .child(ul(cx).child(move || {
+                                    proficiencies()
+                                        .iter()
+                                        .map(|p| li(cx).child(p))
+                                        .collect::<Vec<HtmlElement<Li>>>()
+                                })),
+                        ),
+                    )
                     // Center column
                     .child(GridCol(cx).child(ScrollableContainerBox(cx)))
                     // Right column

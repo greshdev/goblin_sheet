@@ -271,7 +271,7 @@ impl Background {
             let skills = &self.skill_proficiencies;
             let mut words = skills.split_ascii_whitespace();
             while let Some(word) = words.next() {
-                let word = word.replace(",", "").to_lowercase();
+                let word = word.replace(",", "");
                 skill_list.push(word);
             }
             features.push(Feature {
@@ -279,7 +279,7 @@ impl Background {
                 desc: self.skill_proficiencies.to_string(),
                 level: 1,
                 feature_type: FeatureType::Proficiency(skill_list),
-                source_slug: source_slug,
+                source_slug,
                 hidden: false,
             })
         }
