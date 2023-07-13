@@ -12,12 +12,13 @@ pub struct Feature {
     pub level: i32,
     pub feature_type: FeatureType,
     pub source_slug: String,
+    pub hidden: bool,
 }
 
 #[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
 pub enum FeatureType {
     Asi(CharacterAsi),
-    Proficiency,
+    Proficiency(Vec<String>),
     #[default]
     Fluff,
     None,
@@ -36,6 +37,7 @@ impl Species {
                     desc: self.asi_desc.to_string(),
                     feature_type: FeatureType::Asi(char_asi),
                     source_slug: format!("species:{}", self.slug),
+                    hidden: true,
                 });
             }
         }
@@ -98,6 +100,7 @@ impl Subspecies {
                     desc: self.asi_desc.to_string(),
                     feature_type: FeatureType::Asi(char_asi),
                     source_slug: format!("subspecies:{}", self.slug),
+                    hidden: true,
                 });
             }
         }
@@ -198,6 +201,7 @@ impl Class {
                                     desc: String::new(),
                                     feature_type: FeatureType::None,
                                     source_slug: format!("class:{}", self.slug),
+                                    hidden: false,
                                 };
                                 features.push(current_feature);
                                 current_feature = new_feature;
@@ -237,6 +241,7 @@ impl Background {
             level: 1,
             feature_type: FeatureType::Fluff,
             source_slug: source_slug.clone(),
+            hidden: false,
         });
 
         // Primary feature for background
@@ -246,6 +251,7 @@ impl Background {
             level: 1,
             feature_type: FeatureType::None,
             source_slug: source_slug.clone(),
+            hidden: false,
         });
 
         // Suggested characteristics for background
@@ -255,7 +261,28 @@ impl Background {
             level: 1,
             feature_type: FeatureType::Fluff,
             source_slug: source_slug.clone(),
+            hidden: false,
         });
+
+        // A5e Backgrounds allow for options within their proficencies,
+        // and I don't want to bother parsting those right now...
+        if self.document_slug != "a5e" {
+            let mut skill_list = vec![];
+            let skills = &self.skill_proficiencies;
+            let mut words = skills.split_ascii_whitespace();
+            while let Some(word) = words.next() {
+                let word = word.replace(",", "").to_lowercase();
+                skill_list.push(word);
+            }
+            features.push(Feature {
+                name: "Skill Proficiencies".to_string(),
+                desc: self.skill_proficiencies.to_string(),
+                level: 1,
+                feature_type: FeatureType::Proficiency(skill_list),
+                source_slug: source_slug,
+                hidden: false,
+            })
+        }
 
         features
     }
