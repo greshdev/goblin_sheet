@@ -20,9 +20,16 @@ pub enum FeatureType {
     Asi(CharacterAsi),
     Proficiency(Vec<String>),
     SavingThrow(Ability),
+    Option(FeatureOptions),
     #[default]
     Fluff,
     None,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq)]
+pub struct FeatureOptions {
+    pub num_choices: i32,
+    pub options: Vec<FeatureType>,
 }
 
 impl Species {
@@ -145,7 +152,70 @@ impl Subspecies {
 impl Class {
     pub fn features(&self) -> Vec<Feature> {
         let source_slug = format!("class:{}", self.slug);
-        let patterns = vec![
+        let mut features: Vec<Feature> = vec![];
+
+        // Add class skills as a feature
+        let level_pattern =
+            static_regex!(r"Choose (two|three|four|two skills) from (.+)");
+        let skill_choices = &self.prof_skills;
+        let source_slug_2 = source_slug.clone();
+        if skill_choices == "Choose any three" {
+            // Bard!
+            features.push(Feature {
+                name: "Class Skills".to_string(),
+                desc: skill_choices.to_string(),
+                level: 1,
+                feature_type: FeatureType::Option(FeatureOptions {
+                    num_choices: 4,
+                    options: SKILL_LIST
+                        .iter()
+                        .map(|s| FeatureType::Proficiency(vec![s.to_string()]))
+                        .collect::<Vec<FeatureType>>(),
+                }),
+                source_slug: source_slug_2,
+                hidden: false,
+            })
+        } else {
+            if let Some(captures) = level_pattern.captures(&skill_choices) {
+                // Handle first match (number of skills to pick)
+                let mut count = 0;
+                if let Some(group) = captures.get(0) {
+                    count = match group.as_str() {
+                        "two" => 2,
+                        "two skills" => 2,
+                        "three" => 3,
+                        "four" => 4,
+                        _ => 0,
+                    };
+                }
+                // Parse rest of string as list of skills
+                let mut skills = vec![];
+                if let Some(group) = captures.get(1) {
+                    let group_string = group.as_str();
+                    let new_string = group_string.replace("and", "");
+                    for substring in new_string.split(',') {
+                        skills.push(substring.trim().to_string());
+                    }
+                }
+                let skills_as_features = skills
+                    .iter()
+                    .map(|s| FeatureType::Proficiency(vec![s.to_string()]))
+                    .collect::<Vec<FeatureType>>();
+                features.push(Feature {
+                    name: "Class Skills".to_string(),
+                    desc: skill_choices.to_string(),
+                    level: 1,
+                    feature_type: FeatureType::Option(FeatureOptions {
+                        num_choices: count,
+                        options: skills_as_features,
+                    }),
+                    source_slug: source_slug_2,
+                    hidden: false,
+                })
+            }
+        }
+
+        let level_patterns = [
             static_regex!(r"At ([0-9]{1,2})[a-zA-Z]{1,2} level"),
             static_regex!(r"When you reach ([0-9]{1,2})[a-zA-Z]{1,2} level"),
             static_regex!(r"Starting at ([0-9]{1,2})[a-zA-Z]{1,2} level"),
@@ -155,7 +225,6 @@ impl Class {
                 r"Beginning when you reach ([0-9]{1,2})[a-zA-Z]{1,2} level"
             ),
         ];
-        let mut features: Vec<Feature> = vec![];
 
         let desc = self.desc.replace("\n \n", "\n\n");
         let desc_parts = desc.split("\n\n").collect::<Vec<&str>>();
@@ -183,7 +252,7 @@ impl Class {
             } else {
                 // Check if this line of the feature description mentions
                 // a level at which it applies.
-                for pattern in &patterns {
+                for pattern in level_patterns.iter() {
                     let matches = pattern.captures(line);
 
                     if let Some(captures) = matches {
@@ -227,6 +296,7 @@ impl Class {
         }
         features.push(current_feature);
 
+        // Add saving throw proficencies
         let saves = self.prof_saving_throws.split_whitespace();
         for save in saves {
             let string = save.replace(',', "");
@@ -249,7 +319,26 @@ impl Class {
         features
     }
 }
-
+const SKILL_LIST: [&str; 18] = [
+    "Athletics",
+    "Acrobatics",
+    "Sleight of Hand",
+    "Stealth",
+    "Arcana",
+    "History",
+    "Investigation",
+    "Nature",
+    "Religion",
+    "Animal Handling",
+    "Insight",
+    "Medicine",
+    "Perception",
+    "Survival",
+    "Deception",
+    "Intimidation",
+    "Performance",
+    "Persuasion",
+];
 impl Background {
     pub fn features(&self) -> Vec<Feature> {
         let source_slug = format!("background:{}", self.slug);
