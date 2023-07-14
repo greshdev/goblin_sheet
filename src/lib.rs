@@ -17,6 +17,7 @@ use api::api_extensions::*;
 
 use api::api_model::Species;
 use api::api_model::Subspecies;
+use character_model::Ability;
 use character_model::AbilityScores;
 use header_panel::Header;
 use leptos::{component, IntoView, Scope};
@@ -179,7 +180,7 @@ pub fn App(cx: Scope) -> impl IntoView {
         asis: current_asis,
     };
 
-    let proficiencies = Signal::derive(cx, move || {
+    let _proficiencies = Signal::derive(cx, move || {
         character_features()
             .iter()
             .filter_map(|f| {
@@ -193,6 +194,9 @@ pub fn App(cx: Scope) -> impl IntoView {
             .cloned()
             .collect::<Vec<String>>()
     });
+
+    let proficency_bonus =
+        create_read_slice(cx, character, CharacterDetails::prof_bonus);
 
     let subspecies_signals = create_slice(
         cx,
@@ -210,39 +214,182 @@ pub fn App(cx: Scope) -> impl IntoView {
         div(cx).classes("container").child(StatsRow(
             cx,
             character,
+            proficency_bonus,
             ability_scores,
         )),
-        div(cx)
-            .attr("class", "container")
-            // Left column
-            .child(
-                GridRow(cx)
-                    .child(
-                        GridCol(cx).child(
-                            ScrollableContainerBox(cx)
-                                .child(h1(cx).child("Proficiencies:"))
-                                .child(ul(cx).child(move || {
-                                    proficiencies()
-                                        .iter()
-                                        .map(|p| li(cx).child(p))
-                                        .collect::<Vec<HtmlElement<Li>>>()
-                                })),
-                        ),
-                    )
-                    // Center column
-                    .child(GridCol(cx).child(ScrollableContainerBox(cx)))
-                    // Right column
-                    .child(RightColumn(
-                        cx,
-                        character_features,
-                        current_species,
-                        subspecies_signals,
-                    )),
-            ),
+        div(cx).attr("class", "container").child(
+            GridRow(cx)
+                // Left column
+                .child(LeftColumn(
+                    cx,
+                    character_features,
+                    proficency_bonus,
+                    ability_scores,
+                ))
+                // Center column
+                .child(GridCol(cx).child(ScrollableContainerBox(cx)))
+                // Right column
+                .child(RightColumn(
+                    cx,
+                    character_features,
+                    current_species,
+                    subspecies_signals,
+                )),
+        ),
     ]
 }
 
 type OptionList = Vec<HtmlElement<Option_>>;
+type DivList = Vec<HtmlElement<Div>>;
+
+/*====================================
+ *
+ *  LEFT COLUMN
+ *
+ *===================================*/
+
+pub fn LeftColumn(
+    cx: Scope,
+    features: Signal<Vec<Feature>>,
+    proficiency_bonus: Signal<i32>,
+    ability_scores: AbilityScoresReactive,
+) -> HtmlElement<Div> {
+    let saves = Signal::derive(cx, move || {
+        features()
+            .iter()
+            .filter_map(|f| {
+                if let FeatureType::SavingThrow(ability) = &f.feature_type {
+                    Some(ability.clone())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<Ability>>()
+    });
+    let skills = Signal::derive(cx, move || {
+        features()
+            .iter()
+            .filter_map(|f| {
+                if let FeatureType::Proficiency(profs) = &f.feature_type {
+                    Some(profs)
+                } else {
+                    None
+                }
+            })
+            .flatten()
+            .cloned()
+            .collect::<Vec<String>>()
+    });
+    GridCol(cx).child(
+        BoxedColumn(cx)
+            .child(h1(cx).child("Proficencies:"))
+            .child(
+                ul(cx)
+                    .classes("nav nav-tabs mb-3")
+                    .id("proficencyTabs")
+                    .attr("role", "tablist")
+                    .child(vec![
+                        Tab(cx, "saves-tab", true, "Saves"),
+                        Tab(cx, "skills-tab", false, "Skills"),
+                        Tab(cx, "other-tab", false, "Other"),
+                    ]),
+            )
+            .child(
+                ul(cx).style("padding-left", "0rem").child(
+                    div(cx)
+                        .classes("tab-content")
+                        .id("proficencyTabsContent")
+                        .child(vec![
+                            TabPanel(
+                                cx,
+                                "saves-tab",
+                                true,
+                                SavesDisplay(
+                                    cx,
+                                    saves,
+                                    proficiency_bonus,
+                                    ability_scores,
+                                ),
+                            ),
+                            TabPanel(
+                                cx,
+                                "skills-tab",
+                                false,
+                                SkillsDisplay(cx, skills),
+                            ),
+                            //TabPanel(cx, "other-tab", false, background_tab),
+                        ]),
+                ),
+            ),
+    )
+}
+
+fn calc_save(
+    ability_scores: AbilityScoresReactive,
+    saves: Signal<Vec<Ability>>,
+    ability: Ability,
+    proficiency_bonus: Signal<i32>,
+) -> i32 {
+    let bonus = if saves().contains(&ability) {
+        proficiency_bonus()
+    } else {
+        0
+    };
+    ability_scores.get_ability_mod(&ability) + bonus
+}
+
+pub fn SavesDisplay(
+    cx: Scope,
+    saves: Signal<Vec<Ability>>,
+    proficiency_bonus: Signal<i32>,
+    ability_scores: AbilityScoresReactive,
+) -> HtmlElement<Div> {
+    div(cx).child(
+        ul(cx).classes("list-group").child(
+            [
+                Ability::Strength,
+                Ability::Dexterity,
+                Ability::Constitution,
+                Ability::Wisdom,
+                Ability::Intelligence,
+                Ability::Charisma,
+            ]
+            .iter()
+            .map(|ability| {
+                li(cx).classes("list-group-item").child(
+                    div(cx)
+                        .classes("d-flex justify-content-between")
+                        .child(div(cx).child(ability.to_string().to_string()))
+                        .child(div(cx).child(move || {
+                            calc_save(
+                                ability_scores,
+                                saves,
+                                ability.clone(),
+                                proficiency_bonus,
+                            )
+                        })),
+                )
+            })
+            .collect::<Vec<HtmlElement<Li>>>(),
+        ),
+    )
+}
+
+pub fn SkillsDisplay(
+    cx: Scope,
+    skills: Signal<Vec<String>>,
+) -> HtmlElement<Div> {
+    div(cx).child(ul(cx).classes("list-group").child(move || {
+        skills()
+            .iter()
+            .map(|skill| {
+                li(cx)
+                    .classes("list-group-item")
+                    .child(div(cx).child(skill.to_string()))
+            })
+            .collect::<Vec<HtmlElement<Li>>>()
+    }))
+}
 
 /*====================================
  *
@@ -275,10 +422,13 @@ pub fn ClassTab(cx: Scope, features: Signal<Vec<Feature>>) -> HtmlElement<Div> {
         move || {
             features()
                 .iter()
-                .filter(|f| f.source_slug.split(':').next() == Some("class"))
+                .filter(|f| {
+                    f.source_slug.split(':').next() == Some("class")
+                        && !f.hidden
+                })
                 .cloned()
                 .map(|f| FeatureItem(cx, &f))
-                .collect::<Vec<HtmlElement<Div>>>()
+                .collect::<DivList>()
         },
     ))
 }
@@ -298,7 +448,7 @@ pub fn DisplayClassFeatures(
                 .iter()
                 .filter(|f| f.level <= level())
                 .map(|f| FeatureItem(cx, f))
-                .collect::<Vec<HtmlElement<Div>>>()
+                .collect::<DivList>()
         })
 }
 
@@ -347,6 +497,7 @@ fn SpeciesDisplay(
         div(cx).classes("accordion").child(
             features
                 .iter()
+                .filter(|f| !f.hidden)
                 .map(|f| {
                     AccordionItem(
                         cx,
@@ -354,7 +505,7 @@ fn SpeciesDisplay(
                         div(cx).inner_html(parse_markdown_table(&f.desc)),
                     )
                 })
-                .collect::<Vec<HtmlElement<Div>>>(),
+                .collect::<DivList>(),
         )
     } else {
         div(cx)
@@ -408,7 +559,7 @@ pub fn BackgroundTab(
                     div(cx).inner_html(parse_markdown_table(&f.desc)),
                 )
             })
-            .collect::<Vec<HtmlElement<Div>>>()
+            .collect::<DivList>()
     })
 }
 
@@ -455,14 +606,29 @@ pub fn FeatureItem(cx: Scope, f: &Feature) -> HtmlElement<Div> {
 pub fn StatsRow(
     cx: Scope,
     character: RwSignal<CharacterDetails>,
+    proficiency_bonus: Signal<i32>,
     ability_scores: AbilityScoresReactive,
 ) -> HtmlElement<Div> {
     HorizontalPanel(cx).child(
         GridRow(cx)
+            .child(GridCol(cx).child(div(cx)
+            .classes("d-flex flex-column")
+            .child("Proficiency")
+            .child(
+                div(cx)
+                    .classes("border rounded mx-auto d-flex align-items-center justify-content-center")
+                    .child(div(cx))
+                    .style("width", "4rem")
+                    .style("height", "4rem")
+                    .style("text-align", "center")
+                    .child(h2(cx).child(proficiency_bonus).style("margin-top", "-10%")),
+                )
+                .child("Bonus")
+            ))
             .child(GridCol(cx).child(AbilityScoreBox(
                 cx,
                 "Strength",
-                Signal::derive(cx, move || ability_scores.str_score()),
+                Signal::derive(cx, move || ability_scores.dex_score()),
                 create_slice(
                     cx,
                     character,

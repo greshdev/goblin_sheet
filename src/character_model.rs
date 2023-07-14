@@ -61,12 +61,12 @@ impl Default for CharacterDetails {
 
 #[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub struct CharacterAsi {
-    pub score: AbilityScore,
+    pub score: Ability,
     pub source_slug: String,
     pub amount: i32,
 }
 impl CharacterAsi {
-    pub fn new(slug: String, ability: AbilityScore, amount: i32) -> Self {
+    pub fn new(slug: String, ability: Ability, amount: i32) -> Self {
         Self {
             source_slug: slug,
             score: ability,
@@ -122,7 +122,7 @@ impl AbilityScoresReactive {
     pub fn all_asis(&self) -> Vec<CharacterAsi> {
         self.asis.get()
     }
-    fn asis_for_score(&self, score: AbilityScore) -> Vec<CharacterAsi> {
+    fn asis_for_score(&self, score: Ability) -> Vec<CharacterAsi> {
         self.all_asis()
             .iter()
             .filter(|a| a.score == score)
@@ -131,7 +131,7 @@ impl AbilityScoresReactive {
     }
     pub fn str_score(&self) -> i32 {
         let asi_boost: i32 = self
-            .asis_for_score(AbilityScore::Strength)
+            .asis_for_score(Ability::Strength)
             .iter()
             .map(|a| a.amount)
             .sum();
@@ -139,7 +139,7 @@ impl AbilityScoresReactive {
     }
     pub fn dex_score(&self) -> i32 {
         let asi_boost: i32 = self
-            .asis_for_score(AbilityScore::Dexterity)
+            .asis_for_score(Ability::Dexterity)
             .iter()
             .map(|a| a.amount)
             .sum();
@@ -147,7 +147,7 @@ impl AbilityScoresReactive {
     }
     pub fn con_score(&self) -> i32 {
         let asi_boost: i32 = self
-            .asis_for_score(AbilityScore::Constitution)
+            .asis_for_score(Ability::Constitution)
             .iter()
             .map(|a| a.amount)
             .sum();
@@ -155,7 +155,7 @@ impl AbilityScoresReactive {
     }
     pub fn wis_score(&self) -> i32 {
         let asi_boost: i32 = self
-            .asis_for_score(AbilityScore::Wisdom)
+            .asis_for_score(Ability::Wisdom)
             .iter()
             .map(|a| a.amount)
             .sum();
@@ -163,7 +163,7 @@ impl AbilityScoresReactive {
     }
     pub fn int_score(&self) -> i32 {
         let asi_boost: i32 = self
-            .asis_for_score(AbilityScore::Intelligence)
+            .asis_for_score(Ability::Intelligence)
             .iter()
             .map(|a| a.amount)
             .sum();
@@ -171,7 +171,7 @@ impl AbilityScoresReactive {
     }
     pub fn cha_score(&self) -> i32 {
         let asi_boost: i32 = self
-            .asis_for_score(AbilityScore::Charisma)
+            .asis_for_score(Ability::Charisma)
             .iter()
             .map(|a| a.amount)
             .sum();
@@ -198,10 +198,20 @@ impl AbilityScoresReactive {
     pub fn score_to_mod(score: i32) -> i32 {
         (score - 10) / 2
     }
+    pub fn get_ability_mod(&self, ability: &Ability) -> i32 {
+        match ability {
+            Ability::Strength => self.str_mod(),
+            Ability::Dexterity => self.dex_mod(),
+            Ability::Constitution => self.con_mod(),
+            Ability::Wisdom => self.wis_mod(),
+            Ability::Intelligence => self.int_mod(),
+            Ability::Charisma => self.cha_mod(),
+        }
+    }
 }
 
 #[derive(Eq, Hash, PartialEq, Clone, Serialize, Deserialize)]
-pub enum AbilityScore {
+pub enum Ability {
     Strength,
     Dexterity,
     Constitution,
@@ -209,25 +219,25 @@ pub enum AbilityScore {
     Intelligence,
     Charisma,
 }
-impl AbilityScore {
+impl Ability {
     pub fn to_string(&self) -> &str {
         match self {
-            AbilityScore::Strength => "Strength",
-            AbilityScore::Dexterity => "Dexterity",
-            AbilityScore::Constitution => "Constitution",
-            AbilityScore::Wisdom => "Wisdom",
-            AbilityScore::Intelligence => "Intelligence",
-            AbilityScore::Charisma => "Charisma",
+            Ability::Strength => "Strength",
+            Ability::Dexterity => "Dexterity",
+            Ability::Constitution => "Constitution",
+            Ability::Wisdom => "Wisdom",
+            Ability::Intelligence => "Intelligence",
+            Ability::Charisma => "Charisma",
         }
     }
-    pub fn from_string(string: &str) -> Option<AbilityScore> {
+    pub fn from_string(string: &str) -> Option<Ability> {
         match string.to_uppercase().as_str() {
-            "STRENGTH" => Some(AbilityScore::Strength),
-            "DEXTERITY" => Some(AbilityScore::Dexterity),
-            "CONSTITUTION" => Some(AbilityScore::Constitution),
-            "WISDOM" => Some(AbilityScore::Wisdom),
-            "INTELLIGENCE" => Some(AbilityScore::Intelligence),
-            "CHARISMA" => Some(AbilityScore::Charisma),
+            "STRENGTH" => Some(Ability::Strength),
+            "DEXTERITY" => Some(Ability::Dexterity),
+            "CONSTITUTION" => Some(Ability::Constitution),
+            "WISDOM" => Some(Ability::Wisdom),
+            "INTELLIGENCE" => Some(Ability::Intelligence),
+            "CHARISMA" => Some(Ability::Charisma),
             _ => None,
         }
     }

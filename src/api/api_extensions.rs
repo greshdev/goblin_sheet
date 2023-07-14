@@ -1,7 +1,7 @@
 use regex_static::{static_regex, Regex};
 use serde::{Deserialize, Serialize};
 
-use crate::character_model::CharacterAsi;
+use crate::character_model::{Ability, CharacterAsi};
 
 use super::api_model::*;
 
@@ -19,6 +19,7 @@ pub struct Feature {
 pub enum FeatureType {
     Asi(CharacterAsi),
     Proficiency(Vec<String>),
+    SavingThrow(Ability),
     #[default]
     Fluff,
     None,
@@ -143,6 +144,7 @@ impl Subspecies {
 
 impl Class {
     pub fn features(&self) -> Vec<Feature> {
+        let source_slug = format!("class:{}", self.slug);
         let patterns = vec![
             static_regex!(r"At ([0-9]{1,2})[a-zA-Z]{1,2} level"),
             static_regex!(r"When you reach ([0-9]{1,2})[a-zA-Z]{1,2} level"),
@@ -159,7 +161,7 @@ impl Class {
         let desc_parts = desc.split("\n\n").collect::<Vec<&str>>();
 
         let mut current_feature = Feature {
-            source_slug: format!("class:{}", self.slug),
+            source_slug: source_slug.to_string(),
             ..Default::default()
         };
         for line in desc_parts {
@@ -175,7 +177,7 @@ impl Class {
                 }
                 current_feature = Feature {
                     name: line.replace("### ", "").trim().to_string(),
-                    source_slug: format!("class:{}", self.slug),
+                    source_slug: source_slug.to_string(),
                     ..Default::default()
                 };
             } else {
@@ -200,7 +202,7 @@ impl Class {
                                     name: current_feature.name.clone(),
                                     desc: String::new(),
                                     feature_type: FeatureType::None,
-                                    source_slug: format!("class:{}", self.slug),
+                                    source_slug: source_slug.to_string(),
                                     hidden: false,
                                 };
                                 features.push(current_feature);
@@ -224,6 +226,25 @@ impl Class {
             current_feature.level = 1;
         }
         features.push(current_feature);
+
+        let saves = self.prof_saving_throws.split_whitespace();
+        for save in saves {
+            let string = save.replace(',', "");
+            let attribute = Ability::from_string(&string);
+            if let Some(attribute) = attribute {
+                features.push(Feature {
+                    name: format!("{string} Saving Throw"),
+                    desc: format!(
+                        "You have proficiency in {string} saving throws.",
+                    ),
+                    level: 1,
+                    feature_type: FeatureType::SavingThrow(attribute),
+                    source_slug: source_slug.to_string(),
+                    hidden: true,
+                })
+            }
+        }
+
         features.sort_by(|a, b| a.level.cmp(&b.level));
         features
     }
@@ -266,13 +287,14 @@ impl Background {
 
         // A5e Backgrounds allow for options within their proficencies,
         // and I don't want to bother parsting those right now...
-        if self.document_slug != "a5e" {
+        if self.document_slug != "a5e"
+            && !self.skill_proficiencies.contains(" or ")
+        {
             let mut skill_list = vec![];
             let skills = &self.skill_proficiencies;
-            let mut words = skills.split_ascii_whitespace();
-            while let Some(word) = words.next() {
-                let word = word.replace(",", "");
-                skill_list.push(word);
+            for word in skills.split(',') {
+                let word = word.trim();
+                skill_list.push(word.to_string());
             }
             features.push(Feature {
                 name: "Skill Proficiencies".to_string(),

@@ -57,9 +57,12 @@ pub fn OptionWithDocTitle(
 }
 
 pub fn ScrollableContainerBox(cx: Scope) -> HtmlElement<Div> {
+    BoxedColumn(cx).style("overflow-y", "auto")
+}
+
+pub fn BoxedColumn(cx: Scope) -> HtmlElement<Div> {
     div(cx)
         .style("height", "65vh")
-        .style("overflow-y", "auto")
         .classes("container border rounded pt-2")
 }
 
