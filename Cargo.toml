@@ -15,8 +15,8 @@ serde = "1.0.164"
 serde_json = "1.0.99"
 reqwasm = "0.5.0"
 comrak = "0.18.0"
-regex_static = "0.1.1"
 web-sys = { version = "0.3.64", features = ["Storage"] }
+lazy-regex = "3.0.0"
 
 [dependencies.uuid]
 version = "1.4.0"

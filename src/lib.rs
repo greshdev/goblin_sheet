@@ -56,6 +56,12 @@ fn write_character_to_local_storage(character: RwSignal<CharacterDetails>) {
     }
 }
 
+#[derive(Clone, Copy)]
+pub struct FeaturesWrapper {
+    pub all: Signal<Vec<Feature>>,
+    pub optional_features: RwSignal<Vec<Feature>>,
+}
+
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
     // Create reactive signal to store character state
@@ -125,8 +131,9 @@ pub fn App(cx: Scope) -> impl IntoView {
         }
     });
 
-    let character_features = Signal::derive(cx, move || {
+    let features_base = Signal::derive(cx, move || {
         let mut features_out: Vec<Feature> = vec![];
+
         // These are currently the only character properties
         // that can supply features, so they're the only ones
         // we need to listen too for now.
@@ -160,8 +167,49 @@ pub fn App(cx: Scope) -> impl IntoView {
             .collect::<Vec<Feature>>()
     });
 
+    let optional_features = Signal::derive(cx, move || {
+        features_base()
+            .iter()
+            .filter_map(|f| {
+                if let FeatureType::Option(op) = &f.feature_type {
+                    Some((f.feature_slug(), op.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<(String, FeatureOptions)>>()
+    });
+    let selected_otional_features: RwSignal<Vec<FeatureOptionsSelection>> =
+        create_rw_signal(cx, vec![]);
+
+    let current_features = Signal::derive(cx, move || {
+        let mut features_out: Vec<Feature> = features_base();
+
+        selected_otional_features.with(|selected| {
+            for select in selected {
+                let op_features = optional_features();
+                let option = op_features.iter().find_map(|(slug, op_feat)| {
+                    if select.slug.contains(&slug.to_string()) {
+                        Some(op_feat)
+                    } else {
+                        None
+                    }
+                });
+                // We found the option that corresponds to this selection
+                if let Some(options) = option {
+                    if let Some(selection) =
+                        options.options.get(select.selection)
+                    {
+                        features_out.push(selection.to_owned());
+                    }
+                }
+            }
+        });
+        features_out
+    });
+
     let current_asis = Signal::derive(cx, move || {
-        character_features()
+        current_features()
             .iter()
             .filter_map(|f| {
                 if let FeatureType::Asi(asi) = &f.feature_type {
@@ -182,16 +230,15 @@ pub fn App(cx: Scope) -> impl IntoView {
     };
 
     let _proficiencies = Signal::derive(cx, move || {
-        character_features()
+        current_features()
             .iter()
             .filter_map(|f| {
-                if let FeatureType::Proficiency(profs) = &f.feature_type {
-                    Some(profs)
+                if let FeatureType::Proficiency(prof) = &f.feature_type {
+                    Some(prof)
                 } else {
                     None
                 }
             })
-            .flatten()
             .cloned()
             .collect::<Vec<String>>()
     });
@@ -223,20 +270,29 @@ pub fn App(cx: Scope) -> impl IntoView {
                 // Left column
                 .child(LeftColumn(
                     cx,
-                    character_features,
+                    current_features,
                     proficency_bonus,
                     ability_scores,
                 ))
                 // Center column
-                .child(GridCol(cx).child(ScrollableContainerBox(cx)))
+                .child(GridCol(cx).child(ScrollableContainerBox(cx).child(div(cx).child(
+                    view!{cx,
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#optionsModal">
+                    Launch demo modal
+                    </button>
+
+                    }
+                ))))
                 // Right column
                 .child(RightColumn(
                     cx,
-                    character_features,
+                    selected_otional_features,
+                    current_features,
                     current_species,
                     subspecies_signals,
                 )),
         ),
+        OptionSelectionModal(cx),
     ]
 }
 
@@ -271,13 +327,12 @@ pub fn LeftColumn(
         features()
             .iter()
             .filter_map(|f| {
-                if let FeatureType::Proficiency(profs) = &f.feature_type {
-                    Some(profs)
+                if let FeatureType::Proficiency(prof) = &f.feature_type {
+                    Some(prof)
                 } else {
                     None
                 }
             })
-            .flatten()
             .cloned()
             .collect::<Vec<String>>()
     });
@@ -400,6 +455,7 @@ pub fn SkillsDisplay(
 
 pub fn RightColumn(
     cx: Scope,
+    selected_optional_features: RwSignal<Vec<FeatureOptionsSelection>>,
     features: Signal<Vec<Feature>>,
     current_species: Signal<Option<Species>>,
     subspecies_signals: (Signal<String>, SignalSetter<String>),
@@ -409,7 +465,7 @@ pub fn RightColumn(
             .child(h1(cx).child("Features:"))
             .child(FeaturePanel(
                 cx,
-                ClassTab(cx, features),
+                ClassTab(cx, selected_optional_features, features),
                 SpeciesTab(cx, subspecies_signals, current_species),
                 BackgroundTab(cx, features),
             )),
@@ -446,7 +502,7 @@ pub fn StatsRow(
             .child(GridCol(cx).child(AbilityScoreBox(
                 cx,
                 "Strength",
-                Signal::derive(cx, move || ability_scores.dex_score()),
+                Signal::derive(cx, move || ability_scores.str_score()),
                 create_slice(
                     cx,
                     character,
@@ -562,4 +618,78 @@ fn AbilityScoreBox(
                     }
                 }),
         )
+}
+
+fn OptionSelectionModal(cx: Scope) -> HtmlElement<Div> {
+    div(cx)
+        .classes("modal fade")
+        .id("optionsModal")
+        .attr("tabindex", "-1")
+        .attr("aria-labelledby", "optionsModalLabel")
+        .attr("aria-hidden", "false")
+        .child(
+            div(cx)
+                .classes(
+                    "modal-dialog modal-dialog-centered container container-lg",
+                )
+                .child(
+                    div(cx)
+                        .classes("modal-content")
+                        .child(
+                            div(cx)
+                                .classes("modal-header")
+                                .child(
+                                    h1(cx)
+                                        .classes("modal-title fs-5")
+                                        .id("optionsModalLabel")
+                                        .child("Options"),
+                                )
+                                .child(
+                                    button(cx)
+                                        .attr("type", "button")
+                                        .classes("btn-close")
+                                        .attr("data-bs-dismiss", "modal")
+                                        .attr("aria-label", "Close"),
+                                ),
+                        )
+                        .child(
+                            div(cx).classes("modal-body").child("Hello world!"),
+                        ),
+                ),
+        )
+}
+
+fn Selection(
+    cx: Scope,
+    selections_allowed: i32,
+    slug: String,
+    options: Vec<(String, String)>,
+    selected: WriteSignal<Vec<(String, String)>>,
+) -> Vec<HtmlElement<Select>> {
+    (0..selections_allowed)
+        .map(|_| {
+            let sl = slug.clone();
+            select(cx)
+                .on(ev::change, move |ev| {
+                    let sl = sl.clone();
+                    let val = event_target_value(&ev).to_string();
+                    // Add this value to the "selected" list,
+                    // so we can remove it with the slug
+                    // later if need be.
+                    selected.update(move |s| s.push((sl, val)))
+                })
+                .child(
+                    options
+                        .iter()
+                        .map(|o| {
+                            // Create an HTML option with the
+                            // value and label for this option
+                            option(cx)
+                                .prop("value", o.0.to_string())
+                                .child(o.1.to_string())
+                        })
+                        .collect::<OptionList>(),
+                )
+        })
+        .collect::<Vec<HtmlElement<Select>>>()
 }

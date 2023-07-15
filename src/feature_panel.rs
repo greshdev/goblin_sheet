@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
 use crate::api::api_extensions::Feature;
+use crate::api::api_extensions::FeatureOptionsSelection;
 use crate::api::api_model::Class;
 use crate::DivList;
 use crate::OptionList;
@@ -11,12 +12,17 @@ use crate::components::*;
 use crate::markdown::*;
 
 use crate::api::api_extensions::FeatureType;
+
 use leptos::{ev, html::*, *};
 use leptos::{IntoView, Scope};
 
 /// Tab of the feature menu that renders the
 /// features from the character's class
-pub fn ClassTab(cx: Scope, features: Signal<Vec<Feature>>) -> HtmlElement<Div> {
+pub fn ClassTab(
+    cx: Scope,
+    selected_optional_features: RwSignal<Vec<FeatureOptionsSelection>>,
+    features: Signal<Vec<Feature>>,
+) -> HtmlElement<Div> {
     div(cx).child(div(cx).classes("accordion").id("featuresAccordion").child(
         move || {
             features()
@@ -26,7 +32,65 @@ pub fn ClassTab(cx: Scope, features: Signal<Vec<Feature>>) -> HtmlElement<Div> {
                         && !f.hidden
                 })
                 .cloned()
-                .map(|f| FeatureItem(cx, &f))
+                .map(|f| {
+                    let f_desc = f.desc.to_string();
+                    let feature_display = match f.feature_type.clone() {
+                        FeatureType::Option(o) => {
+                            let options = o.clone().options;
+                            div(cx).child(f_desc).child(
+                                (0..o.num_choices)
+                                    .map(|index1| {
+                                        // We need this slug to represent BOTH
+                                        // the feature this selection came from,
+                                        // as well as WHICH option box it was
+                                        // selected in.
+                                        //let slug = f.feature_slug();
+                                        let slug = format!("{}:{}", f.feature_slug(), index1) ;
+                                        CustomSelect(cx)
+                                            .child(
+                                                options
+                                                .clone()
+                                                .iter()
+                                                // Enumerate so we can get the index
+                                                // of each item.
+                                                .enumerate()
+                                                .map(|(i, op)| match &op.feature_type {
+                                                    FeatureType::Asi(_) => option(cx),
+                                                    FeatureType::Proficiency(prof) => option(cx).prop("value", i).child(prof.clone()),
+                                                    FeatureType::SavingThrow(_) => option(cx),
+                                                    _ => option(cx),
+                                                })
+                                                .collect::<OptionList>())
+                                            .on(ev::change, move |e| {
+                                                let feature_option_slug = slug.clone();
+                                                let val =
+                                                    event_target_value(&e);
+                                                if let Ok(index) = str::parse::<usize>(&val) {
+                                                    selected_optional_features.update(|selected| {
+                                                        selected.retain(|s| s.slug != feature_option_slug);
+                                                        selected.push(FeatureOptionsSelection { 
+                                                            slug: feature_option_slug, 
+                                                            selection: index }
+                                                        )
+                                                    });
+                                                }
+                                            })
+                                    })
+                                    .collect::<Vec<HtmlElement<Select>>>(),
+                            )
+                        }
+                        _ => div(cx).inner_html(parse_markdown_table(&f.desc)),
+                    };
+                    AccordionItem(
+                        cx,
+                        div(cx).child(format!(
+                            "{} (Level {})",
+                            f.name.clone(),
+                            f.level
+                        )),
+                        div(cx).child(feature_display),
+                    )
+                })
                 .collect::<DivList>()
         },
     ))
@@ -46,6 +110,7 @@ pub fn DisplayClassFeatures(
                 .features()
                 .iter()
                 .filter(|f| f.level <= level())
+                .cloned()
                 .map(|f| FeatureItem(cx, f))
                 .collect::<DivList>()
         })
@@ -194,14 +259,37 @@ pub fn FeaturePanel(
         )
 }
 
-pub fn FeatureItem(cx: Scope, f: &Feature) -> HtmlElement<Div> {
-    let feature_display = match f.feature_type {
-        FeatureType::Option(_) => todo!(),
+fn FeatureOptionsList(cx: Scope, options: &[Feature]) -> OptionList {
+    options
+        .clone()
+        .iter()
+        .map(|op| match &op.feature_type {
+            FeatureType::Asi(_) => option(cx),
+            FeatureType::Proficiency(prof) => option(cx).child(prof.clone()),
+            FeatureType::SavingThrow(_) => option(cx),
+            _ => option(cx),
+        })
+        .collect::<OptionList>()
+}
+
+pub fn FeatureItem(cx: Scope, f: Feature) -> HtmlElement<Div> {
+    let f_desc = f.desc.to_string();
+    let feature_display = match f.feature_type.clone() {
+        FeatureType::Option(o) => {
+            let options = o.clone().options;
+            div(cx).child(f_desc).child(
+                (0..o.num_choices)
+                    .map(|_| {
+                        CustomSelect(cx).child(FeatureOptionsList(cx, &options))
+                    })
+                    .collect::<Vec<HtmlElement<Select>>>(),
+            )
+        }
         _ => div(cx).inner_html(parse_markdown_table(&f.desc)),
     };
     AccordionItem(
         cx,
         div(cx).child(format!("{} (Level {})", f.name.clone(), f.level)),
-        feature_display,
+        div(cx).child(feature_display),
     )
 }

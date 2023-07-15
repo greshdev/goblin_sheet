@@ -1,4 +1,4 @@
-use regex_static::{static_regex, Regex};
+use lazy_regex::{regex, regex_captures};
 use serde::{Deserialize, Serialize};
 
 use crate::character_model::{Ability, CharacterAsi};
@@ -14,11 +14,30 @@ pub struct Feature {
     pub source_slug: String,
     pub hidden: bool,
 }
+impl Feature {
+    pub fn feature_slug(&self) -> String {
+        format!(
+            "{}:{}",
+            self.source_slug,
+            self.name.to_lowercase().replace(' ', "_")
+        )
+    }
+    pub fn new_skill(skill: &str, source_slug: &str) -> Self {
+        Self {
+            name: format!("Skill: {}", skill),
+            desc: String::new(),
+            level: 1,
+            feature_type: FeatureType::Proficiency(skill.to_string()),
+            source_slug: source_slug.to_string(),
+            hidden: true,
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
 pub enum FeatureType {
     Asi(CharacterAsi),
-    Proficiency(Vec<String>),
+    Proficiency(String),
     SavingThrow(Ability),
     Option(FeatureOptions),
     #[default]
@@ -29,7 +48,18 @@ pub enum FeatureType {
 #[derive(Serialize, Deserialize, Clone, PartialEq)]
 pub struct FeatureOptions {
     pub num_choices: i32,
-    pub options: Vec<FeatureType>,
+    pub options: Vec<Feature>,
+}
+/// A selection of an item from within a FeatureOptions.
+/// Since FeatureOptions can allow for multiple choices,
+/// you can have multiple of these per FeatureOptions.
+pub struct FeatureOptionsSelection {
+    /// Each feature option belongs to a Feature, which has a feature slug
+    /// This string represents that slug.
+    pub slug: String,
+    /// An index into the options array of the FeatureOption, representing
+    /// the currently selected item
+    pub selection: usize,
 }
 
 impl Species {
@@ -62,28 +92,23 @@ impl Species {
             // formatting.
             let line = line.replace("**_", "***").replace("_**", "***");
             // The feature name will be in the first phrase in bold-italics.
-            let re = Regex::new(r"\*\*\*(.+)\*\*\*(.+)");
-            if let Ok(re) = re {
-                match re.captures(&line) {
-                    Some(captures) => {
-                        if !current_feature.name.is_empty() {
-                            features.push(current_feature);
-                            current_feature = Feature {
-                                source_slug: format!("species:{}", self.slug),
-                                ..Default::default()
-                            };
-                        }
-                        if let Some(group) = captures.get(1) {
-                            current_feature.name = group.as_str().to_string();
-                        }
-                        if let Some(group) = captures.get(2) {
-                            current_feature.desc += group.as_str();
-                        }
-                    }
-                    None => {
-                        current_feature.desc += &line;
-                    }
+            let captures = regex_captures!(r"\*\*\*(.+)\*\*\*(.+)", &line);
+            if let Some((_, feature_name, rest)) = captures {
+                if !current_feature.name.is_empty() {
+                    features.push(current_feature);
+                    current_feature = Feature {
+                        source_slug: format!("species:{}", self.slug),
+                        ..Default::default()
+                    };
                 }
+                if !feature_name.is_empty() {
+                    current_feature.name = feature_name.to_string();
+                }
+                if !rest.is_empty() {
+                    current_feature.desc += rest;
+                }
+            } else {
+                current_feature.desc += &line;
             }
         }
         if !current_feature.name.is_empty() {
@@ -119,27 +144,22 @@ impl Subspecies {
         };
         for line in desc_parts {
             let line = line.replace("**_", "***").replace("_**", "***");
-            let re = Regex::new(r"\*\*\*(.+)\*\*\*(.+)");
-            if let Ok(re) = re {
-                match re.captures(&line) {
-                    Some(captures) => {
-                        if !current_feature.name.is_empty() {
-                            features.push(current_feature);
-                            current_feature = Feature::default();
-                            current_feature.source_slug =
-                                format!("subspecies:{}", self.slug);
-                        }
-                        if let Some(group) = captures.get(1) {
-                            current_feature.name = group.as_str().to_string();
-                        }
-                        if let Some(group) = captures.get(2) {
-                            current_feature.desc += group.as_str();
-                        }
-                    }
-                    None => {
-                        current_feature.desc += &line;
-                    }
+            let captures = regex_captures!(r"\*\*\*(.+)\*\*\*(.+)", &line);
+            if let Some((_, feature_name, rest)) = captures {
+                if !current_feature.name.is_empty() {
+                    features.push(current_feature);
+                    current_feature = Feature::default();
+                    current_feature.source_slug =
+                        format!("subspecies:{}", self.slug);
                 }
+                if !feature_name.is_empty() {
+                    current_feature.name = feature_name.to_string();
+                }
+                if !rest.is_empty() {
+                    current_feature.desc += rest;
+                }
+            } else {
+                current_feature.desc += &line;
             }
         }
         if !current_feature.name.is_empty() {
@@ -156,74 +176,74 @@ impl Class {
 
         // Add class skills as a feature
         let level_pattern =
-            static_regex!(r"Choose (two|three|four|two skills) from (.+)");
+            regex!(r"Choose (two|three|four|two skills) from (.+)");
         let skill_choices = &self.prof_skills;
         let source_slug_2 = source_slug.clone();
         if skill_choices == "Choose any three" {
             // Bard!
-            features.push(Feature {
+            let mut feature = Feature {
                 name: "Class Skills".to_string(),
                 desc: skill_choices.to_string(),
                 level: 1,
-                feature_type: FeatureType::Option(FeatureOptions {
-                    num_choices: 4,
-                    options: SKILL_LIST
-                        .iter()
-                        .map(|s| FeatureType::Proficiency(vec![s.to_string()]))
-                        .collect::<Vec<FeatureType>>(),
-                }),
+                feature_type: FeatureType::None,
                 source_slug: source_slug_2,
                 hidden: false,
-            })
-        } else {
-            if let Some(captures) = level_pattern.captures(&skill_choices) {
-                // Handle first match (number of skills to pick)
-                let mut count = 0;
-                if let Some(group) = captures.get(0) {
-                    count = match group.as_str() {
-                        "two" => 2,
-                        "two skills" => 2,
-                        "three" => 3,
-                        "four" => 4,
-                        _ => 0,
-                    };
-                }
-                // Parse rest of string as list of skills
-                let mut skills = vec![];
-                if let Some(group) = captures.get(1) {
-                    let group_string = group.as_str();
-                    let new_string = group_string.replace("and", "");
-                    for substring in new_string.split(',') {
-                        skills.push(substring.trim().to_string());
-                    }
-                }
-                let skills_as_features = skills
+            };
+            feature.feature_type = FeatureType::Option(FeatureOptions {
+                num_choices: 3,
+                options: SKILL_LIST
                     .iter()
-                    .map(|s| FeatureType::Proficiency(vec![s.to_string()]))
-                    .collect::<Vec<FeatureType>>();
-                features.push(Feature {
-                    name: "Class Skills".to_string(),
-                    desc: skill_choices.to_string(),
-                    level: 1,
-                    feature_type: FeatureType::Option(FeatureOptions {
-                        num_choices: count,
-                        options: skills_as_features,
-                    }),
-                    source_slug: source_slug_2,
-                    hidden: false,
-                })
+                    .map(|s| Feature::new_skill(s, &feature.feature_slug()))
+                    .collect::<Vec<Feature>>(),
+            });
+            features.push(feature);
+        } else if let Some(captures) = level_pattern.captures(skill_choices) {
+            // Handle first match (number of skills to pick)
+            let mut count = 0;
+            if let Some(group) = captures.get(1) {
+                count = match group.as_str() {
+                    "two" => 2,
+                    "two skills" => 2,
+                    "three" => 3,
+                    "four" => 4,
+                    _ => 0,
+                };
             }
+            // Parse rest of string as list of skills
+            let mut skills = vec![];
+            if let Some(group) = captures.get(2) {
+                let group_string = group.as_str();
+                let new_string = group_string.replace(" and ", " ");
+                for substring in new_string.split(',') {
+                    skills.push(substring.trim().to_string());
+                }
+            }
+            let mut feature = Feature {
+                name: "Class Skills".to_string(),
+                desc: skill_choices.to_string(),
+                level: 1,
+                feature_type: FeatureType::None,
+                source_slug: source_slug_2,
+                hidden: false,
+            };
+            let skills_as_features = skills
+                .iter()
+                .map(|s| Feature::new_skill(s, &feature.feature_slug()))
+                .collect::<Vec<Feature>>();
+            feature.feature_type = FeatureType::Option(FeatureOptions {
+                num_choices: count,
+                options: skills_as_features,
+            });
+            features.push(feature);
         }
 
         let level_patterns = [
-            static_regex!(r"At ([0-9]{1,2})[a-zA-Z]{1,2} level"),
-            static_regex!(r"When you reach ([0-9]{1,2})[a-zA-Z]{1,2} level"),
-            static_regex!(r"Starting at ([0-9]{1,2})[a-zA-Z]{1,2} level"),
-            static_regex!(r"By ([0-9]{1,2})[a-zA-Z]{1,2} level"),
-            static_regex!(r"Beginning at ([0-9]{1,2})[a-zA-Z]{1,2} level"),
-            static_regex!(
-                r"Beginning when you reach ([0-9]{1,2})[a-zA-Z]{1,2} level"
-            ),
+            regex!(r"At ([0-9]{1,2})[a-zA-Z]{1,2} level"),
+            regex!(r"When you reach ([0-9]{1,2})[a-zA-Z]{1,2} level"),
+            regex!(r"Starting at ([0-9]{1,2})[a-zA-Z]{1,2} level"),
+            regex!(r"By ([0-9]{1,2})[a-zA-Z]{1,2} level"),
+            regex!(r"Beginning at ([0-9]{1,2})[a-zA-Z]{1,2} level"),
+            regex!(r"Beginning when you reach ([0-9]{1,2})[a-zA-Z]{1,2} level"),
         ];
 
         let desc = self.desc.replace("\n \n", "\n\n");
@@ -379,20 +399,18 @@ impl Background {
         if self.document_slug != "a5e"
             && !self.skill_proficiencies.contains(" or ")
         {
-            let mut skill_list = vec![];
             let skills = &self.skill_proficiencies;
             for word in skills.split(',') {
                 let word = word.trim();
-                skill_list.push(word.to_string());
+                features.push(Feature {
+                    name: "Skill Proficiencies".to_string(),
+                    desc: self.skill_proficiencies.to_string(),
+                    level: 1,
+                    feature_type: FeatureType::Proficiency(word.to_string()),
+                    source_slug: source_slug.to_string(),
+                    hidden: false,
+                });
             }
-            features.push(Feature {
-                name: "Skill Proficiencies".to_string(),
-                desc: self.skill_proficiencies.to_string(),
-                level: 1,
-                feature_type: FeatureType::Proficiency(skill_list),
-                source_slug,
-                hidden: false,
-            })
         }
 
         features

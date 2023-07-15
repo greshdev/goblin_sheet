@@ -59,7 +59,7 @@ impl Default for CharacterDetails {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
 pub struct CharacterAsi {
     pub score: Ability,
     pub source_slug: String,
@@ -210,7 +210,7 @@ impl AbilityScoresReactive {
     }
 }
 
-#[derive(Eq, Hash, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Eq, Hash, PartialEq, Clone, Serialize, Deserialize, Debug)]
 pub enum Ability {
     Strength,
     Dexterity,
