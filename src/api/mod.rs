@@ -73,10 +73,12 @@ pub async fn fetch_classes(_: ()) -> Vec<Class> {
 
 /// Fetch list of background options from Open5e
 pub async fn fetch_backgrounds(_: ()) -> Vec<Background> {
-    let res =
-        reqwasm::http::Request::get("https://api.open5e.com/v1/backgrounds/")
-            .send()
-            .await;
+    // A5e Backgrounds are harder to parse, so exclude them for now
+    let res = reqwasm::http::Request::get(
+        "https://api.open5e.com/v1/backgrounds/?document_slug__not_in=a5e",
+    )
+    .send()
+    .await;
     match res {
         Ok(response) => match response.json::<BackgroundsAPI>().await {
             Ok(api) => api

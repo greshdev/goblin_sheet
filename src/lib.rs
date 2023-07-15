@@ -11,11 +11,9 @@ use crate::character_model::*;
 use crate::components::*;
 use api::api_extensions::*;
 use api::api_model::Species;
-use character_model::Ability;
 use panels::feature_panel::*;
 use panels::header_panel::HeaderPanel;
-use panels::proficencies_panel::SavesDisplay;
-use panels::proficencies_panel::SkillsDisplay;
+use panels::proficencies_panel::ProfPanel;
 use panels::stats_panel::StatsPanel;
 
 use leptos::{component, IntoView, Scope};
@@ -339,73 +337,12 @@ pub fn LeftColumn(
     proficiency_bonus: Signal<i32>,
     ability_scores: AbilityScoresReactive,
 ) -> HtmlDiv {
-    let saves = Signal::derive(cx, move || {
-        features()
-            .iter()
-            .filter_map(|f| {
-                if let FeatureType::SavingThrow(ability) = &f.feature_type {
-                    Some(ability.clone())
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<Ability>>()
-    });
-    let skills = Signal::derive(cx, move || {
-        features()
-            .iter()
-            .filter_map(|f| {
-                if let FeatureType::SkillProficency(prof) = &f.feature_type {
-                    Some(prof)
-                } else {
-                    None
-                }
-            })
-            .cloned()
-            .collect::<Vec<String>>()
-    });
-    GridCol(cx).child(
-        BoxedColumn(cx)
-            .child(h1(cx).child("Proficencies:"))
-            .child(
-                ul(cx)
-                    .classes("nav nav-tabs mb-3")
-                    .id("proficencyTabs")
-                    .attr("role", "tablist")
-                    .child(vec![
-                        Tab(cx, "saves-tab", true, "Saves"),
-                        Tab(cx, "skills-tab", false, "Skills"),
-                        Tab(cx, "other-tab", false, "Other"),
-                    ]),
-            )
-            .child(
-                ul(cx).style("padding-left", "0rem").child(
-                    div(cx)
-                        .classes("tab-content")
-                        .id("proficencyTabsContent")
-                        .child(vec![
-                            TabPanel(
-                                cx,
-                                "saves-tab",
-                                true,
-                                SavesDisplay(
-                                    cx,
-                                    saves,
-                                    proficiency_bonus,
-                                    ability_scores,
-                                ),
-                            ),
-                            TabPanel(
-                                cx,
-                                "skills-tab",
-                                false,
-                                SkillsDisplay(cx, skills),
-                            ),
-                            //TabPanel(cx, "other-tab", false, background_tab),
-                        ]),
-                ),
-            ),
-    )
+    GridCol(cx).child(ProfPanel(
+        cx,
+        features,
+        proficiency_bonus,
+        ability_scores,
+    ))
 }
 
 /*====================================

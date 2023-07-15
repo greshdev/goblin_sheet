@@ -1,5 +1,100 @@
-use crate::{character_model::*, components::HtmlDiv};
+use crate::{
+    api::api_extensions::{Feature, FeatureType},
+    character_model::*,
+    components::*,
+};
 use leptos::{html::*, prelude::*, Scope};
+
+pub fn ProfPanel(
+    cx: Scope,
+    features: Signal<Vec<Feature>>,
+    proficiency_bonus: Signal<i32>,
+    ability_scores: AbilityScoresReactive,
+) -> HtmlElement<Div> {
+    let saves = Signal::derive(cx, move || {
+        features()
+            .iter()
+            .filter_map(|f| {
+                if let FeatureType::SavingThrow(ability) = &f.feature_type {
+                    Some(ability.clone())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<Ability>>()
+    });
+    let skills = Signal::derive(cx, move || {
+        features()
+            .iter()
+            .filter_map(|f| {
+                if let FeatureType::SkillProficency(prof) = &f.feature_type {
+                    Some(prof)
+                } else {
+                    None
+                }
+            })
+            .cloned()
+            .collect::<Vec<String>>()
+    });
+    let other_profs = Signal::derive(cx, move || {
+        features()
+            .iter()
+            .filter_map(|f| {
+                if let FeatureType::OtherProficency(prof) = &f.feature_type {
+                    Some(prof)
+                } else {
+                    None
+                }
+            })
+            .cloned()
+            .collect::<Vec<String>>()
+    });
+    BoxedColumn(cx)
+        .child(h1(cx).child("Proficencies:"))
+        .child(
+            ul(cx)
+                .classes("nav nav-tabs mb-3")
+                .id("proficencyTabs")
+                .attr("role", "tablist")
+                .child(vec![
+                    Tab(cx, "saves-tab", true, "Saves"),
+                    Tab(cx, "skills-tab", false, "Skills"),
+                    Tab(cx, "other-tab", false, "Other"),
+                ]),
+        )
+        .child(
+            ul(cx).style("padding-left", "0rem").child(
+                div(cx)
+                    .classes("tab-content")
+                    .id("proficencyTabsContent")
+                    .child(vec![
+                        TabPanel(
+                            cx,
+                            "saves-tab",
+                            true,
+                            SavesDisplay(
+                                cx,
+                                saves,
+                                proficiency_bonus,
+                                ability_scores,
+                            ),
+                        ),
+                        TabPanel(
+                            cx,
+                            "skills-tab",
+                            false,
+                            SkillsTab(cx, skills),
+                        ),
+                        TabPanel(
+                            cx,
+                            "other-tab",
+                            false,
+                            OtherProfsTab(cx, other_profs),
+                        ),
+                    ]),
+            ),
+        )
+}
 
 pub fn SavesDisplay(
     cx: Scope,
@@ -52,7 +147,7 @@ fn calc_save(
     ability_scores.get_ability_mod(&ability) + bonus
 }
 
-pub fn SkillsDisplay(cx: Scope, skills: Signal<Vec<String>>) -> HtmlDiv {
+pub fn SkillsTab(cx: Scope, skills: Signal<Vec<String>>) -> HtmlDiv {
     div(cx).child(ul(cx).classes("list-group").child(move || {
         skills()
             .iter()
@@ -60,6 +155,19 @@ pub fn SkillsDisplay(cx: Scope, skills: Signal<Vec<String>>) -> HtmlDiv {
                 li(cx)
                     .classes("list-group-item")
                     .child(div(cx).child(skill.to_string()))
+            })
+            .collect::<Vec<HtmlElement<Li>>>()
+    }))
+}
+
+pub fn OtherProfsTab(cx: Scope, other_profs: Signal<Vec<String>>) -> HtmlDiv {
+    div(cx).child(ul(cx).classes("list-group").child(move || {
+        other_profs()
+            .iter()
+            .map(|prof| {
+                li(cx)
+                    .classes("list-group-item")
+                    .child(div(cx).child(prof.to_string()))
             })
             .collect::<Vec<HtmlElement<Li>>>()
     }))

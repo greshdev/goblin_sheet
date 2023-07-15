@@ -1,7 +1,7 @@
-use lazy_regex::{regex, regex_captures};
-use serde::{Deserialize, Serialize};
-
 use crate::character_model::{Ability, CharacterAsi};
+use lazy_regex::{regex, regex_captures};
+use leptos::log;
+use serde::{Deserialize, Serialize};
 
 use super::api_model::*;
 
@@ -396,8 +396,6 @@ impl Background {
             hidden: false,
         });
 
-        // A5e Backgrounds allow for options within their proficencies,
-        // and I don't want to bother parsting those right now...
         if self.document_slug != "a5e"
             && !self.skill_proficiencies.contains(" or ")
         {
@@ -415,6 +413,96 @@ impl Background {
                     hidden: true,
                 });
             }
+        }
+
+        if let Some(tool_prof_string) = &self.tool_proficiencies {
+            let split = tool_prof_string.split(',');
+            for substring in split {
+                if substring == "Two of your choice" {
+                    let feature = Feature {
+                        name: format!("Tool Proficency"),
+                        desc: substring.to_string(),
+                        level: 1,
+                        feature_type: FeatureType::OtherProficency(
+                            "Two tools of your choice".to_string(),
+                        ),
+                        source_slug: source_slug.to_string(),
+                        hidden: true,
+                    };
+                    features.push(feature);
+                } else if substring != "No additional tool proficiencies" {
+                    let feature = Feature {
+                        name: format!("Tool Proficency"),
+                        desc: substring.to_string(),
+                        level: 1,
+                        feature_type: FeatureType::OtherProficency(
+                            substring.to_string(),
+                        ),
+                        source_slug: source_slug.to_string(),
+                        hidden: true,
+                    };
+                    features.push(feature);
+                }
+            }
+            //log!("{}", tool_prof_string);
+        }
+        if let Some(languages_string) = &self.languages {
+            if languages_string == "One language of your choice, typically your adopted parents' language (if any)"{
+                let feature = Feature {
+                    name: format!("Language"),
+                    desc: languages_string.to_string(),
+                    level: 1,
+                    feature_type: FeatureType::OtherProficency(
+                        languages_string.to_string(),
+                    ),
+                    source_slug: source_slug.to_string(),
+                    hidden: true,
+                };
+                features.push(feature);
+            } else if languages_string != "No additional languages" {
+                let split = languages_string.split(',');
+                for substring in split {
+                    if substring == "One of your choice" 
+                    || substring == "One language of your choice" {
+                        let feature = Feature {
+                            name: format!("Language"),
+                            desc: substring.to_string(),
+                            level: 1,
+                            feature_type: FeatureType::OtherProficency(
+                                "One language of your choice".to_string(),
+                            ),
+                            source_slug: source_slug.to_string(),
+                            hidden: true,
+                        };
+                        features.push(feature);
+                    } else if substring == "Two of your choice" {
+                        let feature = Feature {
+                            name: format!("Language"),
+                            desc: substring.to_string(),
+                            level: 1,
+                            feature_type: FeatureType::OtherProficency(
+                                "Two languages of your choice".to_string(),
+                            ),
+                            source_slug: source_slug.to_string(),
+                            hidden: true,
+                        };
+                        features.push(feature);
+                    } else {
+                        let feature = Feature {
+                            name: format!("Language"),
+                            desc: substring.to_string(),
+                            level: 1,
+                            feature_type: FeatureType::OtherProficency(
+                                format!("Language: {}", substring),
+                            ),
+                            source_slug: source_slug.to_string(),
+                            hidden: true,
+                        };
+                        features.push(feature);
+                    }
+                }
+            }
+            //log!("{}", tool_prof_string);
         }
 
         features
