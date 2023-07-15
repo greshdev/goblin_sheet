@@ -7,17 +7,12 @@ mod markdown;
 mod panels;
 
 use crate::api::FuturesWrapper;
-use crate::character_model::AbilityScoresReactive;
-use crate::character_model::CharacterAsi;
-use crate::character_model::CharacterDetails;
+use crate::character_model::*;
 use crate::components::*;
 use api::api_extensions::*;
 use api::api_model::Species;
 use character_model::Ability;
-use panels::feature_panel::BackgroundTab;
-use panels::feature_panel::ClassTab;
-use panels::feature_panel::FeaturePanel;
-use panels::feature_panel::SpeciesTab;
+use panels::feature_panel::*;
 use panels::header_panel::HeaderPanel;
 use panels::stats_panel::StatsPanel;
 
@@ -331,9 +326,6 @@ pub fn App(cx: Scope) -> impl IntoView {
     ]
 }
 
-type OptionList = Vec<HtmlElement<Option_>>;
-type DivList = Vec<HtmlElement<Div>>;
-
 /*====================================
  *
  *  LEFT COLUMN
@@ -345,7 +337,7 @@ pub fn LeftColumn(
     features: Signal<Vec<Feature>>,
     proficiency_bonus: Signal<i32>,
     ability_scores: AbilityScoresReactive,
-) -> HtmlElement<Div> {
+) -> HtmlDiv {
     let saves = Signal::derive(cx, move || {
         features()
             .iter()
@@ -434,7 +426,7 @@ pub fn SavesDisplay(
     saves: Signal<Vec<Ability>>,
     proficiency_bonus: Signal<i32>,
     ability_scores: AbilityScoresReactive,
-) -> HtmlElement<Div> {
+) -> HtmlDiv {
     div(cx).child(
         ul(cx).classes("list-group").child(
             [
@@ -466,10 +458,7 @@ pub fn SavesDisplay(
     )
 }
 
-pub fn SkillsDisplay(
-    cx: Scope,
-    skills: Signal<Vec<String>>,
-) -> HtmlElement<Div> {
+pub fn SkillsDisplay(cx: Scope, skills: Signal<Vec<String>>) -> HtmlDiv {
     div(cx).child(ul(cx).classes("list-group").child(move || {
         skills()
             .iter()
@@ -494,7 +483,7 @@ pub fn RightColumn(
     features: Signal<Vec<Feature>>,
     current_species: Signal<Option<Species>>,
     subspecies_signals: (Signal<String>, SignalSetter<String>),
-) -> HtmlElement<Div> {
+) -> HtmlDiv {
     GridCol(cx).child(
         ScrollableContainerBox(cx)
             .child(h1(cx).child("Features:"))
