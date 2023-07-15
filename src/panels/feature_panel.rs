@@ -58,16 +58,20 @@ pub fn ClassTab(
     let filter = |f: &&Feature| {
         f.source_slug.split(':').next() == Some("class") && !f.hidden
     };
-    div(cx).child(div(cx).classes("accordion").id("featuresAccordion").child(
-        move || {
-            features()
-                .iter()
-                .filter(filter)
-                .cloned()
-                .map(|f| FeatureDiv(f, cx, selected_optional_features))
-                .collect::<DivList>()
-        },
-    ))
+    let feature_list = move || {
+        features()
+            .iter()
+            .filter(filter)
+            .cloned()
+            .map(|f| FeatureDiv(f, cx, selected_optional_features))
+            .collect::<DivList>()
+    };
+    div(cx).child(
+        div(cx)
+            .classes("accordion")
+            .id("featuresAccordion")
+            .child(feature_list),
+    )
 }
 
 fn FeatureDiv(
@@ -175,16 +179,15 @@ fn SelectFeatureOption(
     (i, op): (usize, &Feature),
     selected_index: usize,
 ) -> HtmlElement<Option_> {
-    let selected = i == selected_index;
     let out = match &op.feature_type {
         FeatureType::Asi(asi) => SelectFeatureOptionAsi(cx, asi),
-        FeatureType::Proficiency(prof) => {
+        FeatureType::SkillProficency(prof) => {
             SelectFeatureOptionProficiency(cx, prof)
         }
         FeatureType::SavingThrow(ab) => SelectFeatureOptionSave(cx, ab),
         _ => option(cx),
     };
-    return out.prop("value", i).prop("selected", selected);
+    return out.prop("value", i).prop("selected", i == selected_index);
 }
 
 fn SelectFeatureOptionAsi(

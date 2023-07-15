@@ -14,6 +14,8 @@ use api::api_model::Species;
 use character_model::Ability;
 use panels::feature_panel::*;
 use panels::header_panel::HeaderPanel;
+use panels::proficencies_panel::SavesDisplay;
+use panels::proficencies_panel::SkillsDisplay;
 use panels::stats_panel::StatsPanel;
 
 use leptos::{component, IntoView, Scope};
@@ -270,7 +272,7 @@ pub fn App(cx: Scope) -> impl IntoView {
         current_features()
             .iter()
             .filter_map(|f| {
-                if let FeatureType::Proficiency(prof) = &f.feature_type {
+                if let FeatureType::SkillProficency(prof) = &f.feature_type {
                     Some(prof)
                 } else {
                     None
@@ -331,7 +333,6 @@ pub fn App(cx: Scope) -> impl IntoView {
  *  LEFT COLUMN
  *
  *===================================*/
-
 pub fn LeftColumn(
     cx: Scope,
     features: Signal<Vec<Feature>>,
@@ -354,7 +355,7 @@ pub fn LeftColumn(
         features()
             .iter()
             .filter_map(|f| {
-                if let FeatureType::Proficiency(prof) = &f.feature_type {
+                if let FeatureType::SkillProficency(prof) = &f.feature_type {
                     Some(prof)
                 } else {
                     None
@@ -405,70 +406,6 @@ pub fn LeftColumn(
                 ),
             ),
     )
-}
-
-fn calc_save(
-    ability_scores: AbilityScoresReactive,
-    saves: Signal<Vec<Ability>>,
-    ability: Ability,
-    proficiency_bonus: Signal<i32>,
-) -> i32 {
-    let bonus = if saves().contains(&ability) {
-        proficiency_bonus()
-    } else {
-        0
-    };
-    ability_scores.get_ability_mod(&ability) + bonus
-}
-
-pub fn SavesDisplay(
-    cx: Scope,
-    saves: Signal<Vec<Ability>>,
-    proficiency_bonus: Signal<i32>,
-    ability_scores: AbilityScoresReactive,
-) -> HtmlDiv {
-    div(cx).child(
-        ul(cx).classes("list-group").child(
-            [
-                Ability::Strength,
-                Ability::Dexterity,
-                Ability::Constitution,
-                Ability::Wisdom,
-                Ability::Intelligence,
-                Ability::Charisma,
-            ]
-            .iter()
-            .map(|ability| {
-                li(cx).classes("list-group-item").child(
-                    div(cx)
-                        .classes("d-flex justify-content-between")
-                        .child(div(cx).child(ability.to_string().to_string()))
-                        .child(div(cx).child(move || {
-                            calc_save(
-                                ability_scores,
-                                saves,
-                                ability.clone(),
-                                proficiency_bonus,
-                            )
-                        })),
-                )
-            })
-            .collect::<Vec<HtmlElement<Li>>>(),
-        ),
-    )
-}
-
-pub fn SkillsDisplay(cx: Scope, skills: Signal<Vec<String>>) -> HtmlDiv {
-    div(cx).child(ul(cx).classes("list-group").child(move || {
-        skills()
-            .iter()
-            .map(|skill| {
-                li(cx)
-                    .classes("list-group-item")
-                    .child(div(cx).child(skill.to_string()))
-            })
-            .collect::<Vec<HtmlElement<Li>>>()
-    }))
 }
 
 /*====================================

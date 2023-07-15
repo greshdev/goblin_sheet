@@ -27,7 +27,7 @@ impl Feature {
             name: format!("Skill: {}", skill),
             desc: String::new(),
             level: 1,
-            feature_type: FeatureType::Proficiency(skill.to_string()),
+            feature_type: FeatureType::SkillProficency(skill.to_string()),
             source_slug: source_slug.to_string(),
             hidden: true,
         }
@@ -37,11 +37,12 @@ impl Feature {
 #[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
 pub enum FeatureType {
     Asi(CharacterAsi),
-    Proficiency(String),
     SavingThrow(Ability),
+    SkillProficency(String),
+    OtherProficency(String),
     Option(FeatureOptions),
-    #[default]
     Fluff,
+    #[default]
     None,
 }
 
@@ -407,7 +408,9 @@ impl Background {
                     name: "Skill Proficiencies".to_string(),
                     desc: self.skill_proficiencies.to_string(),
                     level: 1,
-                    feature_type: FeatureType::Proficiency(word.to_string()),
+                    feature_type: FeatureType::SkillProficency(
+                        word.to_string(),
+                    ),
                     source_slug: source_slug.to_string(),
                     hidden: true,
                 });
