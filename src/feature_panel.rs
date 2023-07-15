@@ -44,8 +44,16 @@ pub fn ClassTab(
                                         // the feature this selection came from,
                                         // as well as WHICH option box it was
                                         // selected in.
-                                        //let slug = f.feature_slug();
                                         let slug = format!("{}:{}", f.feature_slug(), index1) ;
+                                        let slug_2 = slug.clone();
+                                        let mut selected_index = 0;
+                                        let selected_index_ptr = &mut selected_index;
+                                        selected_optional_features.with(
+                                            move |selected| 
+                                            if let Some(thing) = selected.iter().find(|f| f.slug == slug_2) {
+                                                *selected_index_ptr = thing.selection;
+                                            }
+                                        );
                                         CustomSelect(cx)
                                             .child(
                                                 options
@@ -56,7 +64,11 @@ pub fn ClassTab(
                                                 .enumerate()
                                                 .map(|(i, op)| match &op.feature_type {
                                                     FeatureType::Asi(_) => option(cx),
-                                                    FeatureType::Proficiency(prof) => option(cx).prop("value", i).child(prof.clone()),
+                                                    FeatureType::Proficiency(prof) => 
+                                                        option(cx)
+                                                            .prop("value", i)
+                                                            .prop("selected", i == selected_index)
+                                                            .child(prof.clone()),
                                                     FeatureType::SavingThrow(_) => option(cx),
                                                     _ => option(cx),
                                                 })

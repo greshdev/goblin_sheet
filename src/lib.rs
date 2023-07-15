@@ -275,14 +275,7 @@ pub fn App(cx: Scope) -> impl IntoView {
                     ability_scores,
                 ))
                 // Center column
-                .child(GridCol(cx).child(ScrollableContainerBox(cx).child(div(cx).child(
-                    view!{cx,
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#optionsModal">
-                    Launch demo modal
-                    </button>
-
-                    }
-                ))))
+                .child(GridCol(cx).child(ScrollableContainerBox(cx)))
                 // Right column
                 .child(RightColumn(
                     cx,
@@ -292,7 +285,7 @@ pub fn App(cx: Scope) -> impl IntoView {
                     subspecies_signals,
                 )),
         ),
-        OptionSelectionModal(cx),
+        // OptionSelectionModal(cx),
     ]
 }
 
