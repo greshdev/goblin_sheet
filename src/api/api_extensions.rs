@@ -53,6 +53,7 @@ pub struct FeatureOptions {
 /// A selection of an item from within a FeatureOptions.
 /// Since FeatureOptions can allow for multiple choices,
 /// you can have multiple of these per FeatureOptions.
+#[derive(Serialize, Deserialize)]
 pub struct FeatureOptionsSelection {
     /// Each feature option belongs to a Feature, which has a feature slug
     /// This string represents that slug.
@@ -408,7 +409,7 @@ impl Background {
                     level: 1,
                     feature_type: FeatureType::Proficiency(word.to_string()),
                     source_slug: source_slug.to_string(),
-                    hidden: false,
+                    hidden: true,
                 });
             }
         }

@@ -48,7 +48,10 @@ pub fn ClassTab(
                                         let slug_2 = slug.clone();
                                         let mut selected_index = 0;
                                         let selected_index_ptr = &mut selected_index;
-                                        selected_optional_features.with(
+                                        // Don't track here, because we don't want this
+                                        // element to refresh when we change our
+                                        // selection.
+                                        selected_optional_features.with_untracked(
                                             move |selected| 
                                             if let Some(thing) = selected.iter().find(|f| f.slug == slug_2) {
                                                 *selected_index_ptr = thing.selection;
@@ -227,7 +230,10 @@ pub fn BackgroundTab(
     div(cx).classes("accordion").child(move || {
         features()
             .iter()
-            .filter(|f| f.source_slug.split(':').next() == Some("background"))
+            .filter(|f| 
+                !f.hidden && 
+                f.source_slug.split(':').next() == Some("background")
+            )
             .map(|f| {
                 AccordionItem(
                     cx,

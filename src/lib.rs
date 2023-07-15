@@ -24,9 +24,10 @@ use header_panel::Header;
 use leptos::{component, IntoView, Scope};
 use leptos::{ev, html::*, *};
 
-const CHAR_STORAGE_KEY: &str = "character_sheet_character";
+const CHAR_STORAGE_KEY: &str = "char_sheet_character";
+const OPTIONS_STORAGE_KEY: &str = "char_sheet_selected_optional_features";
 
-fn get_character() -> CharacterDetails {
+fn load_character() -> CharacterDetails {
     if let Some(window) = web_sys::window() {
         if let Ok(Some(local_storage)) = window.local_storage() {
             if let Ok(Some(data)) = local_storage.get_item(CHAR_STORAGE_KEY) {
@@ -56,6 +57,39 @@ fn write_character_to_local_storage(character: RwSignal<CharacterDetails>) {
     }
 }
 
+fn load_selected_optional_features() -> Vec<FeatureOptionsSelection> {
+    if let Some(window) = web_sys::window() {
+        if let Ok(Some(local_storage)) = window.local_storage() {
+            if let Ok(Some(data)) = local_storage.get_item(OPTIONS_STORAGE_KEY)
+            {
+                if let Ok(options) =
+                    serde_json::from_str::<Vec<FeatureOptionsSelection>>(&data)
+                {
+                    return options;
+                }
+            }
+        }
+    }
+    vec![]
+}
+
+fn write_optional_features_to_local_storage(
+    options: RwSignal<Vec<FeatureOptionsSelection>>,
+) {
+    // Make sure we can actually correctly access local storage
+    if let Some(window) = web_sys::window() {
+        if let Ok(Some(local_storage)) = window.local_storage() {
+            options.with(|options| {
+                // Serialize the character to json
+                if let Ok(json) = serde_json::to_string(options) {
+                    // Store the json
+                    let _ = local_storage.set_item(OPTIONS_STORAGE_KEY, &json);
+                }
+            })
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct FeaturesWrapper {
     pub all: Signal<Vec<Feature>>,
@@ -65,7 +99,7 @@ pub struct FeaturesWrapper {
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
     // Create reactive signal to store character state
-    let character = create_rw_signal(cx, get_character());
+    let character = create_rw_signal(cx, load_character());
 
     // Update local storage whenever the character details change
     create_effect(cx, move |_| write_character_to_local_storage(character));
@@ -179,8 +213,14 @@ pub fn App(cx: Scope) -> impl IntoView {
             })
             .collect::<Vec<(String, FeatureOptions)>>()
     });
+
     let selected_otional_features: RwSignal<Vec<FeatureOptionsSelection>> =
-        create_rw_signal(cx, vec![]);
+        create_rw_signal(cx, load_selected_optional_features());
+
+    // Update local storage when the selected optional features change
+    create_effect(cx, move |_| {
+        write_optional_features_to_local_storage(selected_otional_features)
+    });
 
     let current_features = Signal::derive(cx, move || {
         let mut features_out: Vec<Feature> = features_base();
@@ -280,7 +320,7 @@ pub fn App(cx: Scope) -> impl IntoView {
                 .child(RightColumn(
                     cx,
                     selected_otional_features,
-                    current_features,
+                    features_base,
                     current_species,
                     subspecies_signals,
                 )),
