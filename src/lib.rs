@@ -390,8 +390,8 @@ pub fn CenterColumn(
         .child(div(cx).classes("container border rounded pt-2 mb-2").child(
             GridRow(cx).child([
                 ProfBonusBox(cx, proficency_bonus),
+                ACBox(cx),
                 HPBox(cx, max_hp, current_hp),
-                GridCol(cx).child(div(cx)),
             ]),
         ))
         .child(BoxedColumnFlexible(cx).style("height", "49.5vh"))
@@ -409,8 +409,10 @@ fn ProfBonusBox(cx: Scope, proficency_bonus: Signal<i32>) -> HtmlElement<Div> {
                 .style("height", "4rem")
                 .style("text-align", "center")
                 //.child(div(cx))
-                .child(h2(cx).child(proficency_bonus)
-                .style("margin-top", "-10%")),
+                .child(
+                    h2(cx)
+                        .child(proficency_bonus)
+                        .style("margin-top", "-10%")),
                 div(cx).child("Bonus")]
             )
         )
@@ -453,6 +455,23 @@ fn HPBox(
                     .child(max_hp)
             )
     )
+}
+fn ACBox(cx: Scope) -> HtmlElement<Div> {
+    GridCol(cx).child(
+        div(cx)
+            .classes("d-flex flex-column align-items-center")
+            .child("AC")
+            .child([ 
+                div(cx)
+                .classes("border rounded my-auto")
+                .classes("d-flex align-items-center justify-content-center")
+                .style("width", "4rem")
+                .style("height", "4rem")
+                .style("text-align", "center")
+                //.child(div(cx))
+                .child(h2(cx).style("margin-top", "-10%"))
+            ])
+        )
 }
 
 /*====================================

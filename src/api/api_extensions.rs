@@ -1,6 +1,5 @@
 use crate::character_model::{Ability, CharacterAsi};
 use lazy_regex::{regex, regex_captures};
-use leptos::log;
 use serde::{Deserialize, Serialize};
 
 use super::api_model::*;
