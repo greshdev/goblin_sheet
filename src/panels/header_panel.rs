@@ -8,7 +8,7 @@ use crate::{
     OptionList,
 };
 
-pub fn Header(
+pub fn HeaderPanel(
     cx: Scope,
     character: RwSignal<CharacterDetails>,
     futures: FuturesWrapper,

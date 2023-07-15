@@ -3,9 +3,8 @@
 mod api;
 mod character_model;
 mod components;
-mod feature_panel;
-mod header_panel;
 mod markdown;
+mod panels;
 
 use crate::api::FuturesWrapper;
 use crate::character_model::AbilityScoresReactive;
@@ -15,14 +14,15 @@ use crate::components::*;
 use api::api_extensions::*;
 use api::api_model::Species;
 use character_model::Ability;
-use character_model::AbilityScores;
-use feature_panel::BackgroundTab;
-use feature_panel::ClassTab;
-use feature_panel::FeaturePanel;
-use feature_panel::SpeciesTab;
-use header_panel::Header;
+use panels::feature_panel::BackgroundTab;
+use panels::feature_panel::ClassTab;
+use panels::feature_panel::FeaturePanel;
+use panels::feature_panel::SpeciesTab;
+use panels::header_panel::HeaderPanel;
+use panels::stats_panel::StatsPanel;
+
 use leptos::{component, IntoView, Scope};
-use leptos::{ev, html::*, *};
+use leptos::{html::*, *};
 
 const CHAR_STORAGE_KEY: &str = "char_sheet_character";
 const OPTIONS_STORAGE_KEY: &str = "char_sheet_selected_optional_features";
@@ -214,6 +214,8 @@ pub fn App(cx: Scope) -> impl IntoView {
             .collect::<Vec<(String, FeatureOptions)>>()
     });
 
+    // TODO: Fix bug where selected optional features for a class are
+    // retained if you change classes?
     let selected_otional_features: RwSignal<Vec<FeatureOptionsSelection>> =
         create_rw_signal(cx, load_selected_optional_features());
 
@@ -297,9 +299,9 @@ pub fn App(cx: Scope) -> impl IntoView {
     // RENDER
     // ==============
     vec![
-        Header(cx, character, api_data),
+        HeaderPanel(cx, character, api_data),
         // Stats row
-        div(cx).classes("container").child(StatsRow(
+        div(cx).classes("container").child(StatsPanel(
             cx,
             character,
             proficency_bonus,
@@ -503,226 +505,4 @@ pub fn RightColumn(
                 BackgroundTab(cx, features),
             )),
     )
-}
-
-/*====================================
- *
- *  STATS ROW
- *
- *===================================*/
-pub fn StatsRow(
-    cx: Scope,
-    character: RwSignal<CharacterDetails>,
-    proficiency_bonus: Signal<i32>,
-    ability_scores: AbilityScoresReactive,
-) -> HtmlElement<Div> {
-    HorizontalPanel(cx).child(
-        GridRow(cx)
-            .child(GridCol(cx).child(div(cx)
-            .classes("d-flex flex-column")
-            .child("Proficiency")
-            .child(
-                div(cx)
-                    .classes("border rounded mx-auto d-flex align-items-center justify-content-center")
-                    .child(div(cx))
-                    .style("width", "4rem")
-                    .style("height", "4rem")
-                    .style("text-align", "center")
-                    .child(h2(cx).child(proficiency_bonus).style("margin-top", "-10%")),
-                )
-                .child("Bonus")
-            ))
-            .child(GridCol(cx).child(AbilityScoreBox(
-                cx,
-                "Strength",
-                Signal::derive(cx, move || ability_scores.str_score()),
-                create_slice(
-                    cx,
-                    character,
-                    |c| c.ability_scores.base_str,
-                    |c, v| c.ability_scores.base_str = v,
-                ),
-            )))
-            .child(GridCol(cx).child(AbilityScoreBox(
-                cx,
-                "Dexterity",
-                Signal::derive(cx, move || ability_scores.dex_score()),
-                create_slice(
-                    cx,
-                    character,
-                    |c| c.ability_scores.base_dex,
-                    |c, v| c.ability_scores.base_dex = v,
-                ),
-            )))
-            .child(GridCol(cx).child(AbilityScoreBox(
-                cx,
-                "Constitution",
-                Signal::derive(cx, move || ability_scores.con_score()),
-                create_slice(
-                    cx,
-                    character,
-                    |c| c.ability_scores.base_con,
-                    |c, v| c.ability_scores.base_con = v,
-                ),
-            )))
-            .child(GridCol(cx).child(AbilityScoreBox(
-                cx,
-                "Wisdom",
-                Signal::derive(cx, move || ability_scores.wis_score()),
-                create_slice(
-                    cx,
-                    character,
-                    |c| c.ability_scores.base_wis,
-                    |c, v| c.ability_scores.base_wis = v,
-                ),
-            )))
-            .child(GridCol(cx).child(AbilityScoreBox(
-                cx,
-                "Intelligence",
-                Signal::derive(cx, move || ability_scores.int_score()),
-                create_slice(
-                    cx,
-                    character,
-                    |c| c.ability_scores.base_int,
-                    |c, v| c.ability_scores.base_int = v,
-                ),
-            )))
-            .child(GridCol(cx).child(AbilityScoreBox(
-                cx,
-                "Charisma",
-                Signal::derive(cx, move || ability_scores.cha_score()),
-                create_slice(
-                    cx,
-                    character,
-                    |c| c.ability_scores.base_cha,
-                    |c, v| c.ability_scores.base_cha = v,
-                ),
-            ))),
-    )
-}
-fn AbilityScoreBox(
-    cx: Scope,
-    score_name: &str,
-    score: Signal<i32>,
-    (score_base, set_score_base): (Signal<i32>, SignalSetter<i32>),
-) -> HtmlElement<Div> {
-    let score_mod =
-        Signal::derive(cx, move || AbilityScores::score_to_mod(score()));
-
-    let (edit_mode, set_edit_mode) = create_signal(cx, false);
-    let display_score =
-        move || if edit_mode() { score_base() } else { score() };
-
-    div(cx)
-        .classes("d-flex flex-column")
-        .child(score_name.to_string())
-        .child(
-            div(cx)
-                .classes("border rounded mx-auto d-flex align-items-center justify-content-center")
-                .child(div(cx))
-                .style("width", "4rem")
-                .style("height", "4rem")
-                .style("text-align", "center")
-                .child(h2(cx).child(score_mod).style("margin-top", "-10%")),
-        )
-        .child(
-            input(cx)
-                //div(cx)
-                .classes("border rounded mx-auto")
-                .style("width", "2rem")
-                .style("height", "2rem")
-                .style("margin-top", "-1rem")
-                .style("text-align", "center")
-                //.classes("p-1")
-                .style("background", "#212529")
-                .prop("value", display_score)
-                //.child(display_score)
-                // When we "focus" on the input, switch to edit mode
-                // and to show the "base" score
-                .on(ev::focusin, move |_| set_edit_mode(true))
-                // When we lose focus, switch back
-                .on(ev::focusout, move |_| set_edit_mode(false))
-                .on(ev::change, move |e| {
-                    let val = event_target_value(&e);
-                    if let Ok(num) = str::parse::<i32>(&val) {
-                        set_score_base(num)
-                    } else {
-                        set_score_base(10)
-                    }
-                }),
-        )
-}
-
-fn OptionSelectionModal(cx: Scope) -> HtmlElement<Div> {
-    div(cx)
-        .classes("modal fade")
-        .id("optionsModal")
-        .attr("tabindex", "-1")
-        .attr("aria-labelledby", "optionsModalLabel")
-        .attr("aria-hidden", "false")
-        .child(
-            div(cx)
-                .classes(
-                    "modal-dialog modal-dialog-centered container container-lg",
-                )
-                .child(
-                    div(cx)
-                        .classes("modal-content")
-                        .child(
-                            div(cx)
-                                .classes("modal-header")
-                                .child(
-                                    h1(cx)
-                                        .classes("modal-title fs-5")
-                                        .id("optionsModalLabel")
-                                        .child("Options"),
-                                )
-                                .child(
-                                    button(cx)
-                                        .attr("type", "button")
-                                        .classes("btn-close")
-                                        .attr("data-bs-dismiss", "modal")
-                                        .attr("aria-label", "Close"),
-                                ),
-                        )
-                        .child(
-                            div(cx).classes("modal-body").child("Hello world!"),
-                        ),
-                ),
-        )
-}
-
-fn Selection(
-    cx: Scope,
-    selections_allowed: i32,
-    slug: String,
-    options: Vec<(String, String)>,
-    selected: WriteSignal<Vec<(String, String)>>,
-) -> Vec<HtmlElement<Select>> {
-    (0..selections_allowed)
-        .map(|_| {
-            let sl = slug.clone();
-            select(cx)
-                .on(ev::change, move |ev| {
-                    let sl = sl.clone();
-                    let val = event_target_value(&ev).to_string();
-                    // Add this value to the "selected" list,
-                    // so we can remove it with the slug
-                    // later if need be.
-                    selected.update(move |s| s.push((sl, val)))
-                })
-                .child(
-                    options
-                        .iter()
-                        .map(|o| {
-                            // Create an HTML option with the
-                            // value and label for this option
-                            option(cx)
-                                .prop("value", o.0.to_string())
-                                .child(o.1.to_string())
-                        })
-                        .collect::<OptionList>(),
-                )
-        })
-        .collect::<Vec<HtmlElement<Select>>>()
 }
