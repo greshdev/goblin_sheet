@@ -147,6 +147,14 @@ pub fn App(cx: Scope) -> impl IntoView {
         }
     });
 
+    let base_hp = Signal::derive(cx, move || {
+        if let Some(class) = current_class() {
+            class.base_hp()
+        } else {
+            0
+        }
+    });
+
     // Closure to reactively get the API definition of the current background.
     let current_background = Signal::derive(cx, move || {
         let background = background_slice();
@@ -283,6 +291,10 @@ pub fn App(cx: Scope) -> impl IntoView {
     let proficency_bonus =
         create_read_slice(cx, character, CharacterDetails::prof_bonus);
 
+    let current_hp = Signal::derive(cx, move || {
+        base_hp() + (ability_scores.con_mod() * level())
+    });
+
     let subspecies_signals = create_slice(
         cx,
         character,
@@ -294,12 +306,17 @@ pub fn App(cx: Scope) -> impl IntoView {
     // RENDER
     // ==============
     vec![
+        div(cx).classes("position-absolute top-0 start-0").child(
+            a(cx).child("Reset").on(ev::click, move |_| {
+                character.update(|c| *c = CharacterDetails::new());
+                selected_otional_features.update(|s| *s = vec![])
+            }),
+        ),
         HeaderPanel(cx, character, api_data),
         // Stats row
         div(cx).classes("container").child(StatsPanel(
             cx,
             character,
-            proficency_bonus,
             ability_scores,
         )),
         div(cx).attr("class", "container").child(
@@ -312,7 +329,12 @@ pub fn App(cx: Scope) -> impl IntoView {
                     ability_scores,
                 ))
                 // Center column
-                .child(GridCol(cx).child(ScrollableContainerBox(cx)))
+                .child(CenterColumn(
+                    cx,
+                    proficency_bonus,
+                    current_hp,
+                    current_hp,
+                ))
                 // Right column
                 .child(RightColumn(
                     cx,
@@ -323,6 +345,19 @@ pub fn App(cx: Scope) -> impl IntoView {
                 )),
         ),
         // OptionSelectionModal(cx),
+        div(cx)
+        .classes("position-absolute bottom-0 end-0 p-3")
+        .child(
+            a(cx)
+            .child(
+                img(cx)
+                    .attr("src", "github-mark-white.svg")
+                    .attr("alt", "Github Logo")
+                    .style("height", "5vh")
+                    .style("width", "5vh")
+            )
+            .attr("href", "https://github.com/greshdev/goblin_sheet")
+        )
     ]
 }
 
@@ -343,6 +378,81 @@ pub fn LeftColumn(
         proficiency_bonus,
         ability_scores,
     ))
+}
+
+pub fn CenterColumn(
+    cx: Scope,
+    proficency_bonus: Signal<i32>,
+    max_hp: Signal<i32>,
+    current_hp: Signal<i32>,
+) -> HtmlDiv {
+    GridCol(cx)
+        .child(div(cx).classes("container border rounded pt-2 mb-2").child(
+            GridRow(cx).child([
+                ProfBonusBox(cx, proficency_bonus),
+                HPBox(cx, max_hp, current_hp),
+                GridCol(cx).child(div(cx)),
+            ]),
+        ))
+        .child(BoxedColumnFlexible(cx).style("height", "49.5vh"))
+}
+
+fn ProfBonusBox(cx: Scope, proficency_bonus: Signal<i32>) -> HtmlElement<Div> {
+    GridCol(cx).child(
+        div(cx)
+            .classes("d-flex flex-column align-items-center")
+            .child("Proficiency")
+            .child([ 
+                div(cx)
+                .classes("border rounded my-auto d-flex align-items-center justify-content-center")
+                .style("width", "4rem")
+                .style("height", "4rem")
+                .style("text-align", "center")
+                //.child(div(cx))
+                .child(h2(cx).child(proficency_bonus)
+                .style("margin-top", "-10%")),
+                div(cx).child("Bonus")]
+            )
+        )
+}
+fn HPBox(
+    cx: Scope,
+    current_hp: Signal<i32>,
+    max_hp: Signal<i32>,
+) -> HtmlElement<Div> {
+    GridCol(cx).child(
+        div(cx)
+        .classes("d-flex flex-column align-items-center")
+        .child("HP")
+        .child(
+            div(cx)
+                .classes("border rounded my-auto d-flex align-items-center justify-content-center")
+                .style("width", "4rem")
+                .style("height", "4rem")
+                .style("text-align", "center")
+                //.child(div(cx))
+                .child(h2(cx).child(
+                    input(cx)
+                        .prop("value", current_hp)
+                        .classes("mx-auto w-100")
+                        //.style("margin-top", "-1rem")
+                        .style("text-align", "center")
+                        .style("background", "#212529")
+                        .style("border", "none")
+                )
+                .style("margin-top", "-10%")),
+            )
+            .child(
+                div(cx)
+                    .classes("border rounded mx-auto pt-1")
+                    .style("width", "2rem")
+                    .style("height", "2rem")
+                    .style("margin-top", "-1rem")
+                    .style("text-align", "center")
+                    .style("background", "#212529")
+                    .child(max_hp)
+            )
+    )
 }
 
 /*====================================

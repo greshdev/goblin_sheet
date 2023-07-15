@@ -70,6 +70,10 @@ pub fn BoxedColumn(cx: Scope) -> HtmlDiv {
         .classes("container border rounded pt-2")
 }
 
+pub fn BoxedColumnFlexible(cx: Scope) -> HtmlDiv {
+    div(cx).classes("container border rounded pt-2")
+}
+
 pub fn AccordionHeader(
     cx: Scope,
     accordion_id: String,

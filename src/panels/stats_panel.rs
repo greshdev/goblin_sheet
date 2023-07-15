@@ -11,25 +11,10 @@ use crate::components::*;
 pub fn StatsPanel(
     cx: Scope,
     character: RwSignal<CharacterDetails>,
-    proficiency_bonus: Signal<i32>,
     ability_scores: AbilityScoresReactive,
 ) -> HtmlElement<Div> {
     HorizontalPanel(cx).child(
         GridRow(cx)
-            .child(GridCol(cx).child(div(cx)
-            .classes("d-flex flex-column")
-            .child("Proficiency")
-            .child(
-                div(cx)
-                    .classes("border rounded mx-auto d-flex align-items-center justify-content-center")
-                    .child(div(cx))
-                    .style("width", "4rem")
-                    .style("height", "4rem")
-                    .style("text-align", "center")
-                    .child(h2(cx).child(proficiency_bonus).style("margin-top", "-10%")),
-                )
-                .child("Bonus")
-            ))
             .child(GridCol(cx).child(AbilityScoreBox(
                 cx,
                 "Strength",

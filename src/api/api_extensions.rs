@@ -172,6 +172,18 @@ impl Subspecies {
 }
 
 impl Class {
+    pub fn base_hp(&self) -> i32 {
+        let mut split = self.hp_at_1st_level.split(' ');
+        if let Some(word) = split.next() {
+            if let Ok(num) = str::parse::<i32>(word) {
+                return num;
+            } else {
+                0
+            }
+        } else {
+            0
+        }
+    }
     pub fn features(&self) -> Vec<Feature> {
         let source_slug = format!("class:{}", self.slug);
         let mut features: Vec<Feature> = vec![];

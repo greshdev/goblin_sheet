@@ -38,6 +38,9 @@ impl CharacterDetails {
     pub fn set_base_hp(&mut self, hp: i32) {
         self.base_hp = hp;
     }
+    pub fn base_hp(&self) -> i32 {
+        self.base_hp
+    }
     //pub fn max_hp(&self) -> i32 {
     //    self.base_hp + (self.ability_scores.con_mod() * self.level())
     //}
