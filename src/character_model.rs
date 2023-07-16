@@ -14,7 +14,6 @@ pub struct CharacterDetails {
     pub xp: i32,
 
     // HP without con mod factored in.
-    base_hp: i32,
     pub ability_scores: AbilityScores,
 }
 
@@ -28,25 +27,11 @@ impl CharacterDetails {
             background: String::new(),
             //level: 1,
             xp: 0,
-            base_hp: 0,
             ability_scores: AbilityScores::new(),
         }
     }
     pub fn prof_bonus(&self) -> i32 {
         ((self.level() - 1) / 4) + 2
-    }
-    pub fn set_base_hp(&mut self, hp: i32) {
-        self.base_hp = hp;
-    }
-    pub fn base_hp(&self) -> i32 {
-        self.base_hp
-    }
-    //pub fn max_hp(&self) -> i32 {
-    //    self.base_hp + (self.ability_scores.con_mod() * self.level())
-    //}
-    pub fn change_species(&mut self, new: String) {
-        self.species = new;
-        self.subspecies = String::new();
     }
     pub fn set_level(&mut self, level: i32) {
         self.xp = level_to_xp(level)

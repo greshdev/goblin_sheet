@@ -124,7 +124,7 @@ fn FeatureOptionDropdown(
     cx: Scope,
     slug: String,
     selected_optional_features: RwSignal<Vec<FeatureOptionsSelection>>,
-    options: &Vec<Feature>,
+    options: &[Feature],
 ) -> HtmlElement<Select> {
     let matches_slug = |f: &&FeatureOptionsSelection| f.slug == slug;
     // Hack because I don't think any feature option will ever reach
@@ -157,7 +157,7 @@ fn FeatureOptionDropdown(
 }
 
 fn change_selected_feature(
-    slug: &String,
+    slug: &str,
     e: web_sys::Event,
     selected_optional_features: RwSignal<Vec<FeatureOptionsSelection>>,
 ) {
@@ -167,7 +167,7 @@ fn change_selected_feature(
         selected_optional_features.update(|selected| {
             selected.retain(|s| s.slug != feature_option_slug);
             selected.push(FeatureOptionsSelection {
-                slug: feature_option_slug,
+                slug: feature_option_slug.to_string(),
                 selection: index,
             })
         });
@@ -187,7 +187,7 @@ fn SelectFeatureOption(
         FeatureType::SavingThrow(ab) => SelectFeatureOptionSave(cx, ab),
         _ => option(cx),
     };
-    return out.prop("value", i).prop("selected", i == selected_index);
+    out.prop("value", i).prop("selected", i == selected_index)
 }
 
 fn SelectFeatureOptionAsi(

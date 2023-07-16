@@ -175,7 +175,7 @@ impl Class {
         let mut split = self.hp_at_1st_level.split(' ');
         if let Some(word) = split.next() {
             if let Ok(num) = str::parse::<i32>(word) {
-                return num;
+                num
             } else {
                 0
             }
@@ -431,7 +431,7 @@ impl Background {
             for substring in split {
                 if substring == "Two of your choice" {
                     let feature = Feature {
-                        name: format!("Tool Proficency"),
+                        name: "Tool Proficency".to_string(),
                         desc: substring.to_string(),
                         level: 1,
                         feature_type: FeatureType::OtherProficency(
@@ -443,7 +443,7 @@ impl Background {
                     features.push(feature);
                 } else if substring != "No additional tool proficiencies" {
                     let feature = Feature {
-                        name: format!("Tool Proficency"),
+                        name: "Tool Proficency".to_string(),
                         desc: substring.to_string(),
                         level: 1,
                         feature_type: FeatureType::OtherProficency(
@@ -460,7 +460,7 @@ impl Background {
         if let Some(languages_string) = &self.languages {
             if languages_string == "One language of your choice, typically your adopted parents' language (if any)"{
                 let feature = Feature {
-                    name: format!("Language"),
+                    name: "Language".to_string(),
                     desc: languages_string.to_string(),
                     level: 1,
                     feature_type: FeatureType::OtherProficency(
@@ -476,7 +476,7 @@ impl Background {
                     if substring == "One of your choice" 
                     || substring == "One language of your choice" {
                         let feature = Feature {
-                            name: format!("Language"),
+                            name: "Language".to_string(),
                             desc: substring.to_string(),
                             level: 1,
                             feature_type: FeatureType::OtherProficency(
@@ -488,7 +488,7 @@ impl Background {
                         features.push(feature);
                     } else if substring == "Two of your choice" {
                         let feature = Feature {
-                            name: format!("Language"),
+                            name: "Language".to_string(),
                             desc: substring.to_string(),
                             level: 1,
                             feature_type: FeatureType::OtherProficency(
@@ -500,7 +500,7 @@ impl Background {
                         features.push(feature);
                     } else {
                         let feature = Feature {
-                            name: format!("Language"),
+                            name: "Language".to_string(),
                             desc: substring.to_string(),
                             level: 1,
                             feature_type: FeatureType::OtherProficency(
