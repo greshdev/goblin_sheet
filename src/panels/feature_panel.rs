@@ -8,10 +8,15 @@ use crate::api::api_model::Species;
 use crate::api::api_model::Subspecies;
 use crate::character_model::Ability;
 use crate::character_model::CharacterAsi;
+use crate::character_model::CharacterDetails;
 use crate::components::*;
+use crate::get_current_features;
+use crate::get_current_species;
+use crate::get_subspecies;
 use crate::markdown::*;
 
 use crate::api::api_extensions::FeatureType;
+use crate::set_subspecies;
 
 use leptos::{ev, html::*, *};
 use leptos::{IntoView, Scope};
@@ -50,11 +55,8 @@ pub fn FeaturePanel(
 
 /// Tab of the feature menu that renders the
 /// features from the character's class
-pub fn ClassTab(
-    cx: Scope,
-    selected_optional_features: RwSignal<Vec<FeatureOptionsSelection>>,
-    features: Signal<Vec<Feature>>,
-) -> HtmlDiv {
+pub fn ClassTab(cx: Scope) -> HtmlDiv {
+    let features = get_current_features(cx);
     let filter = |f: &&Feature| {
         f.source_slug.split(':').next() == Some("class") && !f.hidden
     };
@@ -63,7 +65,7 @@ pub fn ClassTab(
             .iter()
             .filter(filter)
             .cloned()
-            .map(|f| FeatureDiv(f, cx, selected_optional_features))
+            .map(|f| FeatureDiv(f, cx))
             .collect::<DivList>()
     };
     div(cx).child(
@@ -74,20 +76,12 @@ pub fn ClassTab(
     )
 }
 
-fn FeatureDiv(
-    f: Feature,
-    cx: Scope,
-    selected_optional_features: RwSignal<Vec<FeatureOptionsSelection>>,
-) -> HtmlDiv {
+fn FeatureDiv(f: Feature, cx: Scope) -> HtmlDiv {
     let f_desc = f.desc.to_string();
     let feature_display = match f.feature_type.clone() {
-        FeatureType::Option(feature_op) => RenderOptionFeature(
-            cx,
-            feature_op,
-            f_desc,
-            &f.feature_slug(),
-            selected_optional_features,
-        ),
+        FeatureType::Option(feature_op) => {
+            RenderOptionFeature(cx, feature_op, f_desc, &f.feature_slug())
+        }
         _ => div(cx).inner_html(parse_markdown_table(&f.desc)),
     };
     AccordionItem(
@@ -102,7 +96,6 @@ fn RenderOptionFeature(
     feature_op: FeatureOptions,
     f_desc: String,
     f_slug: &String,
-    selected_optional_features: RwSignal<Vec<FeatureOptionsSelection>>,
 ) -> HtmlDiv {
     let num_choices = feature_op.num_choices;
     let options = feature_op.options;
@@ -112,7 +105,7 @@ fn RenderOptionFeature(
         // as well as WHICH option box it was
         // selected in.
         let slug = format!("{}:{}", f_slug, i);
-        FeatureOptionDropdown(cx, slug, selected_optional_features, &options)
+        FeatureOptionDropdown(cx, slug, &options)
     };
     let dropdowns = (0..num_choices)
         .map(generate_dropdown)
@@ -123,7 +116,6 @@ fn RenderOptionFeature(
 fn FeatureOptionDropdown(
     cx: Scope,
     slug: String,
-    selected_optional_features: RwSignal<Vec<FeatureOptionsSelection>>,
     options: &[Feature],
 ) -> HtmlElement<Select> {
     let matches_slug = |f: &&FeatureOptionsSelection| f.slug == slug;
@@ -134,6 +126,8 @@ fn FeatureOptionDropdown(
     // Don't track here, because we don't want this
     // element to refresh when we change our
     // selection.
+    let selected_optional_features =
+        expect_context::<RwSignal<Vec<FeatureOptionsSelection>>>(cx);
     selected_optional_features.with_untracked(move |selected| {
         if let Some(thing) = selected.iter().find(matches_slug) {
             *selected_index_ptr = thing.selection;
@@ -233,26 +227,20 @@ fn SelectFeatureOptionSave(
 
 /// Tab of the feature menu that renders the
 /// features from the character's species and subspecies
-pub fn SpeciesTab(
-    cx: Scope,
-    (subspecies, set_subspecies): (Signal<String>, SignalSetter<String>),
-    current_species: Signal<Option<Species>>,
-) -> HtmlDiv {
+pub fn SpeciesTab(cx: Scope) -> HtmlDiv {
     div(cx).child(move || {
-        if let Some(s) = current_species() {
-            SpeciesDisplay(cx, s, subspecies, set_subspecies)
+        if let Some(s) = get_current_species(cx)() {
+            SpeciesDisplay(cx, s)
         } else {
             div(cx)
         }
     })
 }
 
-fn SpeciesDisplay(
-    cx: Scope,
-    species: Species,
-    get_subspecies: Signal<String>,
-    set_subspecies: SignalSetter<String>,
-) -> HtmlDiv {
+fn SpeciesDisplay(cx: Scope, species: Species) -> HtmlDiv {
+    let character = expect_context::<RwSignal<CharacterDetails>>(cx);
+    let get_subspecies =
+        create_read_slice(cx, character, |c| c.subspecies.to_string());
     let subspecies_list = species.subraces.clone();
     let mut features = species.features();
     let my_subspecies =
@@ -261,12 +249,7 @@ fn SpeciesDisplay(
         features.append(&mut subspecies.features());
     }
     let dropdown_maybe = if !subspecies_list.is_empty() {
-        div(cx).child(SubspeciesDropdown(
-            cx,
-            subspecies_list,
-            get_subspecies,
-            set_subspecies,
-        ))
+        div(cx).child(SubspeciesDropdown(cx, subspecies_list))
     } else {
         div(cx)
     };
@@ -292,19 +275,14 @@ fn SpeciesDisplay(
     div(cx).child(dropdown_maybe).child(features_div)
 }
 
-fn SubspeciesDropdown(
-    cx: Scope,
-    subspecies: Vec<Subspecies>,
-    get_subspecies: Signal<String>,
-    set_subspecies: SignalSetter<String>,
-) -> impl IntoView {
+fn SubspeciesDropdown(cx: Scope, subspecies: Vec<Subspecies>) -> impl IntoView {
     let options = subspecies
         .iter()
         .map(|ss| {
             // TODO: Look at whether this can be refactored
             OptionWithDocTitle(
                 cx,
-                &get_subspecies(),
+                &get_subspecies(cx)(),
                 &ss.slug,
                 &ss.name,
                 &ss.document_title,
@@ -313,15 +291,18 @@ fn SubspeciesDropdown(
         .collect::<OptionList>();
     CustomSelect(cx)
         .classes("form-select mb-3")
-        .prop("value", get_subspecies)
-        .on(ev::change, move |e| set_subspecies(event_target_value(&e)))
+        .prop("value", get_subspecies(cx))
+        .on(ev::change, move |e| {
+            set_subspecies(cx)(event_target_value(&e))
+        })
         .child(option(cx).prop("value", "").child("Select a subspecies..."))
         .child(options)
 }
 
 /// Tab of the feature menu that renders the
 /// features from the character's background.
-pub fn BackgroundTab(cx: Scope, features: Signal<Vec<Feature>>) -> HtmlDiv {
+pub fn BackgroundTab(cx: Scope) -> HtmlDiv {
+    let features = get_current_features(cx);
     div(cx).classes("accordion").child(move || {
         features()
             .iter()

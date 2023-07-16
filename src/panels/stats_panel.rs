@@ -1,5 +1,6 @@
 use leptos::{
-    create_signal, create_slice, ev, event_target_value, html::*, SignalSetter,
+    create_signal, create_slice, ev, event_target_value, expect_context,
+    html::*, SignalSetter,
 };
 use leptos::{HtmlElement, RwSignal, Scope, Signal};
 
@@ -8,11 +9,9 @@ use crate::character_model::{
 };
 use crate::components::*;
 
-pub fn StatsPanel(
-    cx: Scope,
-    character: RwSignal<CharacterDetails>,
-    ability_scores: AbilityScoresReactive,
-) -> HtmlElement<Div> {
+pub fn StatsPanel(cx: Scope) -> HtmlElement<Div> {
+    let ability_scores = expect_context::<AbilityScoresReactive>(cx);
+    let character = expect_context::<RwSignal<CharacterDetails>>(cx);
     HorizontalPanel(cx).child(
         GridRow(cx)
             .child(GridCol(cx).child(AbilityScoreBox(
@@ -117,7 +116,7 @@ fn AbilityScoreBox(
                 .style("margin-top", "-1rem")
                 .style("text-align", "center")
                 //.classes("p-1")
-                .style("background", "#212529")
+                .style("background", "var(--bs-body-bg)")
                 .prop("value", display_score)
                 //.child(display_score)
                 // When we "focus" on the input, switch to edit mode

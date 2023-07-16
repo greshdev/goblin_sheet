@@ -1,16 +1,11 @@
 use crate::{
-    api::api_extensions::{Feature, FeatureType},
-    character_model::*,
-    components::*,
+    api::api_extensions::FeatureType, character_model::*, components::*,
+    get_current_features, get_prof_bonus,
 };
-use leptos::{html::*, prelude::*, Scope};
+use leptos::{expect_context, html::*, prelude::*, Scope};
 
-pub fn ProfPanel(
-    cx: Scope,
-    features: Signal<Vec<Feature>>,
-    proficiency_bonus: Signal<i32>,
-    ability_scores: AbilityScoresReactive,
-) -> HtmlElement<Div> {
+pub fn ProfPanel(cx: Scope) -> HtmlElement<Div> {
+    let features = get_current_features(cx);
     let saves = Signal::derive(cx, move || {
         features()
             .iter()
@@ -72,12 +67,7 @@ pub fn ProfPanel(
                             cx,
                             "saves-tab",
                             true,
-                            SavesDisplay(
-                                cx,
-                                saves,
-                                proficiency_bonus,
-                                ability_scores,
-                            ),
+                            SavesDisplay(cx, saves),
                         ),
                         TabPanel(
                             cx,
@@ -96,12 +86,8 @@ pub fn ProfPanel(
         )
 }
 
-pub fn SavesDisplay(
-    cx: Scope,
-    saves: Signal<Vec<Ability>>,
-    proficiency_bonus: Signal<i32>,
-    ability_scores: AbilityScoresReactive,
-) -> HtmlDiv {
+pub fn SavesDisplay(cx: Scope, saves: Signal<Vec<Ability>>) -> HtmlDiv {
+    let ability_scores = expect_context::<AbilityScoresReactive>(cx);
     div(cx).child(
         ul(cx).classes("list-group").child(
             [
@@ -123,7 +109,7 @@ pub fn SavesDisplay(
                                 ability_scores,
                                 saves,
                                 ability.clone(),
-                                proficiency_bonus,
+                                get_prof_bonus(cx),
                             )
                         })),
                 )

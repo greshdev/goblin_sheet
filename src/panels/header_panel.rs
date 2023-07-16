@@ -1,18 +1,12 @@
 use leptos::{html::*, *};
 
 use crate::{
-    api::api_model::{Class, *},
-    api::*,
-    character_model::CharacterDetails,
-    components::*,
-    OptionList,
+    api::api_model::Class, api::*, character_model::CharacterDetails,
+    components::*, OptionList,
 };
 
-pub fn HeaderPanel(
-    cx: Scope,
-    character: RwSignal<CharacterDetails>,
-    futures: FuturesWrapper,
-) -> HtmlElement<Div> {
+pub fn HeaderPanel(cx: Scope) -> HtmlElement<Div> {
+    let character = expect_context::<RwSignal<CharacterDetails>>(cx);
     let (species, set_species) = create_slice(
         cx,
         character,
@@ -57,15 +51,12 @@ pub fn HeaderPanel(
                 )
                 .child(
                     GridCol(cx)
-                        .child(GridRowMarginBottom(cx).child(ClassDropdown(
-                            cx,
-                            futures.classes,
-                            class,
-                            set_class,
-                        )))
+                        .child(
+                            GridRowMarginBottom(cx)
+                                .child(ClassDropdown(cx, class, set_class)),
+                        )
                         .child(GridRow(cx).child(SpeciesDropdown(
                             cx,
-                            futures.species,
                             species,
                             set_species,
                         ))),
@@ -78,12 +69,7 @@ pub fn HeaderPanel(
                                 .child(LevelDropdown(cx, level, set_level)),
                         )
                         .child(GridRow(cx).child(div(cx).child(
-                            BackgroundDropdown(
-                                cx,
-                                futures.backgrounds,
-                                background,
-                                set_background,
-                            ),
+                            BackgroundDropdown(cx, background, set_background),
                         ))),
                 ),
         ),
@@ -92,10 +78,10 @@ pub fn HeaderPanel(
 
 fn SpeciesDropdown(
     cx: Scope,
-    future: Resource<(), Vec<Species>>,
     species: Signal<String>,
     set_species: SignalSetter<String>,
 ) -> impl IntoView {
+    let future = expect_context::<FuturesWrapper>(cx).species;
     let change_species = move |e| {
         set_species(event_target_value(&e));
     };
@@ -143,10 +129,10 @@ fn ClassOptionList(
 
 fn ClassDropdown(
     cx: Scope,
-    future: Resource<(), Vec<Class>>,
     class: Signal<String>,
     set_class: SignalSetter<String>,
 ) -> impl IntoView {
+    let future = expect_context::<FuturesWrapper>(cx).classes;
     CustomSelect(cx)
         .prop("value", class)
         .on(ev::change, move |e| set_class(event_target_value(&e)))
@@ -160,10 +146,10 @@ fn ClassDropdown(
 
 fn BackgroundDropdown(
     cx: Scope,
-    future: Resource<(), Vec<Background>>,
     background: Signal<String>,
     set_background: SignalSetter<String>,
 ) -> HtmlElement<Select> {
+    let future = expect_context::<FuturesWrapper>(cx).backgrounds;
     CustomSelect(cx)
         .prop("value", background)
         .on(ev::change, move |e| set_background(event_target_value(&e)))
