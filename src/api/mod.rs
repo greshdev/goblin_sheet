@@ -84,7 +84,12 @@ pub async fn fetch_backgrounds(_: ()) -> Vec<Background> {
     .await;
     match res {
         Ok(response) => match response.json::<BackgroundsAPI>().await {
-            Ok(api) => api.results,
+            Ok(api) => api
+                .results
+                .iter()
+                .filter(|b| b.document_slug != "a5e")
+                .cloned()
+                .collect(),
             // Handle deserialization error condition
             Err(e) => {
                 log!("Could not deserialize data from Open5e to the BackgroundAPI struct!");
