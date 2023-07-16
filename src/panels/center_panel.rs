@@ -51,14 +51,20 @@ pub fn CenterPanel(cx: Scope) -> HtmlDiv {
 
 fn ActionsTab(cx: Scope) -> HtmlDiv {
     let attack_list = expect_context::<RwSignal<Vec<AttackAction>>>(cx);
-    let create_button = button(cx)
-        .attr("type", "button")
-        .classes("btn btn-primary mb-2")
-        .attr("data-bs-toggle", "modal")
-        .attr("data-bs-target", "#attackCreateModal")
-        .child("Add Attack");
     div(cx)
-        .child(create_button)
+        .child(
+            div(cx)
+                .classes("d-flex justify-content-between align-items-center")
+                .child(h4(cx).child("Attacks:"))
+                .child(
+                    h1(cx)
+                        .child("+")
+                        .classes("mt-n1")
+                        .attr("role", "button")
+                        .attr("data-bs-toggle", "modal")
+                        .attr("data-bs-target", "#attackCreateModal"),
+                ),
+        )
         .child(
             div(cx)
                 .classes("accordion mb-2")
