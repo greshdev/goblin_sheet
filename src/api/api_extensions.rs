@@ -1,4 +1,4 @@
-use crate::character_model::{Ability, CharacterAsi};
+use crate::character_model::{Ability, AttackAction, AttackType, CharacterAsi};
 use lazy_regex::{regex, regex_captures};
 use serde::{Deserialize, Serialize};
 
@@ -53,7 +53,7 @@ pub struct FeatureOptions {
 /// A selection of an item from within a FeatureOptions.
 /// Since FeatureOptions can allow for multiple choices,
 /// you can have multiple of these per FeatureOptions.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq)]
 pub struct FeatureOptionsSelection {
     /// Each feature option belongs to a Feature, which has a feature slug
     /// This string represents that slug.
@@ -517,5 +517,48 @@ impl Background {
         }
 
         features
+    }
+}
+#[allow(dead_code)]
+impl Weapon {
+    pub fn is_finesse(&self) -> bool {
+        match &self.properties {
+            Some(p) => p.contains(&String::from("finesse")),
+            None => false,
+        }
+    }
+    pub fn is_light(&self) -> bool {
+        match &self.properties {
+            Some(p) => p.contains(&String::from("light")),
+            None => false,
+        }
+    }
+    pub fn is_reach(&self) -> bool {
+        match &self.properties {
+            Some(p) => p.contains(&String::from("reach")),
+            None => false,
+        }
+    }
+    pub fn is_ranged(&self) -> bool {
+        self.category.contains(&String::from("Ranged"))
+    }
+    pub fn to_attack(&self) -> AttackAction {
+        AttackAction {
+            name: self.name.to_string(),
+            ability: if self.is_finesse() {
+                Ability::Dexterity
+            } else {
+                Ability::Strength
+            },
+            damage_base: self.damage_dice.to_string(),
+            proficient: false,
+            attack_type: if self.is_ranged() {
+                AttackType::Ranged
+            } else {
+                AttackType::Melee
+            },
+            reach: if self.is_reach() { 10 } else { 5 },
+            damage_type: self.damage_type.to_string(),
+        }
     }
 }

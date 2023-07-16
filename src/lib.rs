@@ -25,6 +25,7 @@ use leptos::{html::*, *};
 
 const CHAR_STORAGE_KEY: &str = "char_sheet_character";
 const OPTIONS_STORAGE_KEY: &str = "char_sheet_selected_optional_features";
+const ATTACKS_STORAGE_KEY: &str = "char_sheet_attack_actions";
 
 fn load_character() -> CharacterDetails {
     if let Some(window) = web_sys::window() {
@@ -88,6 +89,36 @@ fn write_optional_features_to_local_storage(
         }
     }
 }
+fn write_attack_list_to_local_storage(options: RwSignal<Vec<AttackAction>>) {
+    // Make sure we can actually correctly access local storage
+    if let Some(window) = web_sys::window() {
+        if let Ok(Some(local_storage)) = window.local_storage() {
+            options.with(|options| {
+                // Serialize the character to json
+                if let Ok(json) = serde_json::to_string(options) {
+                    // Store the json
+                    let _ = local_storage.set_item(ATTACKS_STORAGE_KEY, &json);
+                }
+            })
+        }
+    }
+}
+
+fn load_attack_list() -> Vec<AttackAction> {
+    if let Some(window) = web_sys::window() {
+        if let Ok(Some(local_storage)) = window.local_storage() {
+            if let Ok(Some(data)) = local_storage.get_item(ATTACKS_STORAGE_KEY)
+            {
+                if let Ok(options) =
+                    serde_json::from_str::<Vec<AttackAction>>(&data)
+                {
+                    return options;
+                }
+            }
+        }
+    }
+    vec![]
+}
 
 #[derive(Clone, Copy)]
 pub struct FeaturesWrapper {
@@ -130,14 +161,21 @@ pub fn App(cx: Scope) -> impl IntoView {
         },
     );
 
+    let attack_list: RwSignal<Vec<AttackAction>> =
+        create_rw_signal(cx, load_attack_list());
+    provide_context(cx, attack_list);
+    create_effect(cx, move |_| write_attack_list_to_local_storage(attack_list));
+
     // ==============
     // RENDER
     // ==============
     vec![
         div(cx).classes("position-absolute top-0 start-0").child(
             a(cx).child("Reset").on(ev::click, move |_| {
+                // Reset all global data to default
                 character.update(|c| *c = CharacterDetails::new());
-                selected_optional_features.update(|s| *s = vec![])
+                selected_optional_features.update(|s| *s = vec![]);
+                attack_list.update(|a| *a = vec![])
             }),
         ),
         HeaderPanel(cx),

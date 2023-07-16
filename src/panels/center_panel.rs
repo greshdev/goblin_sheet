@@ -1,23 +1,21 @@
 #![allow(non_snake_case)]
 
-use crate::api::api_model::Weapon;
 use crate::api::FuturesWrapper;
 use crate::character_model::Ability;
 use crate::character_model::AbilityScoresReactive;
+use crate::character_model::AttackAction;
+use crate::character_model::AttackType;
 use crate::components::*;
 use crate::get_prof_bonus;
 use crate::markdown::parse_markdown;
-use leptos::create_rw_signal;
 use leptos::create_signal;
 use leptos::ev;
 use leptos::event_target_value;
 use leptos::expect_context;
 use leptos::html::*;
 use leptos::log;
-use leptos::provide_context;
 use leptos::RwSignal;
 use leptos::Scope;
-use leptos::Signal;
 use leptos::SignalUpdate;
 use leptos::SignalWith;
 use web_sys::SubmitEvent;
@@ -52,8 +50,7 @@ pub fn CenterPanel(cx: Scope) -> HtmlDiv {
 }
 
 fn ActionsTab(cx: Scope) -> HtmlDiv {
-    let attack_list: RwSignal<Vec<AttackAction>> = create_rw_signal(cx, vec![]);
-    provide_context(cx, attack_list);
+    let attack_list = expect_context::<RwSignal<Vec<AttackAction>>>(cx);
     let create_button = button(cx)
         .attr("type", "button")
         .classes("btn btn-primary mb-2")
@@ -86,95 +83,6 @@ fn AttackActionDisplay(cx: Scope, attack: &AttackAction) -> HtmlDiv {
             expect_context::<AbilityScoresReactive>(cx),
         ))),
     )
-}
-impl Weapon {
-    pub fn is_finesse(&self) -> bool {
-        match &self.properties {
-            Some(p) => p.contains(&String::from("finesse")),
-            None => false,
-        }
-    }
-    pub fn is_light(&self) -> bool {
-        match &self.properties {
-            Some(p) => p.contains(&String::from("light")),
-            None => false,
-        }
-    }
-    pub fn is_reach(&self) -> bool {
-        match &self.properties {
-            Some(p) => p.contains(&String::from("reach")),
-            None => false,
-        }
-    }
-    pub fn is_ranged(&self) -> bool {
-        self.category.contains(&String::from("Ranged"))
-    }
-    pub fn to_attack(&self) -> AttackAction {
-        AttackAction {
-            name: self.name.to_string(),
-            ability: if self.is_finesse() {
-                Ability::Dexterity
-            } else {
-                Ability::Strength
-            },
-            damage_base: self.damage_dice.to_string(),
-            proficient: false,
-            attack_type: if self.is_ranged() {
-                AttackType::Ranged
-            } else {
-                AttackType::Melee
-            },
-            reach: if self.is_reach() { 10 } else { 5 },
-            damage_type: self.damage_type.to_string(),
-        }
-    }
-}
-struct AttackAction {
-    pub name: String,
-    pub ability: Ability,
-    pub damage_base: String,
-    pub proficient: bool,
-    pub attack_type: AttackType,
-    pub reach: i32,
-    pub damage_type: String,
-}
-
-enum AttackType {
-    Melee,
-    Ranged,
-}
-impl AttackType {
-    pub fn to_string(&self) -> String {
-        match self {
-            AttackType::Melee => "Melee",
-            AttackType::Ranged => "Ranged",
-        }
-        .to_string()
-    }
-}
-impl AttackAction {
-    pub fn generate_description(
-        &self,
-        proficency_bonus: Signal<i32>,
-        ability_scores: AbilityScoresReactive,
-    ) -> String {
-        let ab_mod = ability_scores.get_ability_mod(&self.ability);
-        let to_hit = ab_mod
-            + if self.proficient {
-                proficency_bonus()
-            } else {
-                0
-            };
-        format!(
-            "_{} Weapon Attack:_ +{} to hit, reach {} ft., one target. _Hit:_ {} + {} {} damage.",
-            self.attack_type.to_string(),
-            to_hit,
-            self.reach,
-            self.damage_base,
-            ab_mod,
-            self.damage_type
-        )
-    }
 }
 
 fn AttackCreationModal(cx: Scope) -> HtmlElement<Div> {

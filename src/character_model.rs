@@ -1,5 +1,9 @@
+use std::fmt::Display;
+
 use leptos::{Signal, SignalGet};
 use serde::{Deserialize, Serialize};
+
+use crate::api::api_extensions::FeatureOptionsSelection;
 
 #[derive(Serialize, Deserialize)]
 pub struct CharacterDetails {
@@ -278,5 +282,62 @@ fn level_to_xp(level: i32) -> i32 {
         18 => 265000,
         19 => 305000,
         20..=i32::MAX => 355000,
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DynamicCharacterData {
+    pub features_selections: Vec<FeatureOptionsSelection>,
+    pub attack_list: Vec<AttackAction>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum AttackType {
+    Melee,
+    Ranged,
+}
+impl Display for AttackType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = match self {
+            AttackType::Melee => "Melee",
+            AttackType::Ranged => "Ranged",
+        };
+        write!(f, "{}", name)
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct AttackAction {
+    pub name: String,
+    pub ability: Ability,
+    pub damage_base: String,
+    pub proficient: bool,
+    pub attack_type: AttackType,
+    pub reach: i32,
+    pub damage_type: String,
+}
+
+impl AttackAction {
+    pub fn generate_description(
+        &self,
+        proficency_bonus: Signal<i32>,
+        ability_scores: AbilityScoresReactive,
+    ) -> String {
+        let ab_mod = ability_scores.get_ability_mod(&self.ability);
+        let to_hit = ab_mod
+            + if self.proficient {
+                proficency_bonus()
+            } else {
+                0
+            };
+        format!(
+            "_{} Weapon Attack:_ +{} to hit, reach {} ft., one target. _Hit:_ {} + {} {} damage.",
+            self.attack_type,
+            to_hit,
+            self.reach,
+            self.damage_base,
+            ab_mod,
+            self.damage_type
+        )
     }
 }

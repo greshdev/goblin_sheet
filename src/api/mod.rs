@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use leptos::{create_local_resource, log, Resource, Scope};
 
 use self::api_model::{
@@ -86,7 +84,7 @@ pub async fn fetch_backgrounds(_: ()) -> Vec<Background> {
     .await;
     match res {
         Ok(response) => match response.json::<BackgroundsAPI>().await {
-            Ok(api) => api.results.iter().cloned().collect::<Vec<Background>>(),
+            Ok(api) => api.results,
             // Handle deserialization error condition
             Err(e) => {
                 log!("Could not deserialize data from Open5e to the BackgroundAPI struct!");
@@ -111,7 +109,7 @@ pub async fn fetch_weapons(_: ()) -> Vec<Weapon> {
         .await;
     match res {
         Ok(response) => match response.json::<WeaponApi>().await {
-            Ok(api) => api.results.iter().cloned().collect::<Vec<Weapon>>(),
+            Ok(api) => api.results,
             // Handle deserialization error condition
             Err(e) => {
                 log!("Could not deserialize data from Open5e to the WeaponAPI struct!");
