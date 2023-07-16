@@ -108,8 +108,7 @@ pub fn App(cx: Scope) -> impl IntoView {
     // Create wrapper for async access to data from Open5e
     // and store it globally
     provide_context(cx, FuturesWrapper::new(cx));
-    
-    
+
     // TODO: Fix bug where selected optional features for a class are
     // retained if you change classes?
     let selected_optional_features: RwSignal<Vec<FeatureOptionsSelection>> =
@@ -121,12 +120,15 @@ pub fn App(cx: Scope) -> impl IntoView {
         write_optional_features_to_local_storage(selected_optional_features)
     });
 
-    provide_context(cx,  AbilityScoresReactive {
-        ability_scores: create_read_slice(cx, character, |c| {
-            c.ability_scores.clone()
-        }),
-        asis: get_current_asis(cx),
-    });
+    provide_context(
+        cx,
+        AbilityScoresReactive {
+            ability_scores: create_read_slice(cx, character, |c| {
+                c.ability_scores.clone()
+            }),
+            asis: get_current_asis(cx),
+        },
+    );
 
     // ==============
     // RENDER
@@ -152,33 +154,33 @@ pub fn App(cx: Scope) -> impl IntoView {
         ),
         // OptionSelectionModal(cx),
         div(cx)
-        .classes("position-absolute bottom-0 end-0 p-3")
-        .child(
-            a(cx)
+            .classes("position-absolute bottom-0 end-0 p-3")
             .child(
-                img(cx)
-                    .attr("src", "github-mark-white.svg")
-                    .attr("alt", "Github Logo")
-                    .style("height", "5vh")
-                    .style("width", "5vh")
-            )
-            .attr("href", "https://github.com/greshdev/goblin_sheet")
-        )
+                a(cx)
+                    .child(
+                        img(cx)
+                            .attr("src", "github-mark-white.svg")
+                            .attr("alt", "Github Logo")
+                            .style("height", "5vh")
+                            .style("width", "5vh"),
+                    )
+                    .attr("href", "https://github.com/greshdev/goblin_sheet"),
+            ),
     ]
 }
 
-pub fn CenterColumn(
-    cx: Scope
-) -> HtmlDiv {
+pub fn CenterColumn(cx: Scope) -> HtmlDiv {
     GridCol(cx)
-        .child(div(cx).classes("container border rounded pt-2 mb-2").child(
-            GridRow(cx).child([
-                ProfBonusBox(cx),
-                ACBox(cx),
-                HPBox(cx),
-            ]),
-        ))
-        .child(BoxedColumnFlexible(cx).style("height", "49.5vh").child(CenterPanel(cx)))
+        .child(
+            div(cx).classes("container border rounded pt-2 mb-2").child(
+                GridRow(cx).child([ProfBonusBox(cx), ACBox(cx), HPBox(cx)]),
+            ),
+        )
+        .child(
+            BoxedColumnFlexible(cx)
+                .style("height", "49.5vh")
+                .child(CenterPanel(cx)),
+        )
 }
 
 fn ProfBonusBox(cx: Scope) -> HtmlElement<Div> {
@@ -186,7 +188,7 @@ fn ProfBonusBox(cx: Scope) -> HtmlElement<Div> {
         div(cx)
             .classes("d-flex flex-column align-items-center")
             .child("Proficiency")
-            .child([ 
+            .child([
                 div(cx)
                 .classes("border rounded my-auto d-flex align-items-center justify-content-center")
                 .style("width", "4rem")
@@ -201,9 +203,7 @@ fn ProfBonusBox(cx: Scope) -> HtmlElement<Div> {
             )
         )
 }
-fn HPBox(
-    cx: Scope,
-) -> HtmlElement<Div> {
+fn HPBox(cx: Scope) -> HtmlElement<Div> {
     GridCol(cx).child(
         div(cx)
         .classes("d-flex flex-column align-items-center")
@@ -243,17 +243,15 @@ fn ACBox(cx: Scope) -> HtmlElement<Div> {
         div(cx)
             .classes("d-flex flex-column align-items-center")
             .child("AC")
-            .child([ 
-                div(cx)
+            .child([div(cx)
                 .classes("border rounded my-auto")
                 .classes("d-flex align-items-center justify-content-center")
                 .style("width", "4rem")
                 .style("height", "4rem")
                 .style("text-align", "center")
                 //.child(div(cx))
-                .child(h2(cx).style("margin-top", "-10%"))
-            ])
-        )
+                .child(h2(cx).style("margin-top", "-10%"))]),
+    )
 }
 
 /*====================================
@@ -262,9 +260,7 @@ fn ACBox(cx: Scope) -> HtmlElement<Div> {
  *
  *===================================*/
 
-pub fn RightColumn(
-    cx: Scope,
-) -> HtmlDiv {
+pub fn RightColumn(cx: Scope) -> HtmlDiv {
     GridCol(cx).child(
         ScrollableContainerBox(cx)
             .child(h1(cx).child("Features:"))
@@ -276,7 +272,6 @@ pub fn RightColumn(
             )),
     )
 }
-
 
 pub fn get_prof_bonus(cx: Scope) -> Signal<i32> {
     let character = expect_context::<RwSignal<CharacterDetails>>(cx);
@@ -325,7 +320,7 @@ pub fn get_current_species(cx: Scope) -> Signal<Option<Species>> {
     })
 }
 
-// Only returns a result if the current subspecies is a subspecies 
+// Only returns a result if the current subspecies is a subspecies
 // of the current species.
 pub fn get_current_subspecies(cx: Scope) -> Signal<Option<Subspecies>> {
     Signal::derive(cx, move || {
@@ -428,7 +423,9 @@ pub fn get_base_features(cx: Scope) -> Signal<Vec<Feature>> {
     })
 }
 
-pub fn get_optional_features(cx: Scope) -> Signal<Vec<(String, FeatureOptions)>> {
+pub fn get_optional_features(
+    cx: Scope,
+) -> Signal<Vec<(String, FeatureOptions)>> {
     Signal::derive(cx, move || {
         get_base_features(cx)()
             .iter()
@@ -444,9 +441,9 @@ pub fn get_optional_features(cx: Scope) -> Signal<Vec<(String, FeatureOptions)>>
 }
 
 pub fn get_current_features(cx: Scope) -> Signal<Vec<Feature>> {
-    let selected_optional_features = 
+    let selected_optional_features =
         expect_context::<RwSignal<Vec<FeatureOptionsSelection>>>(cx);
-    
+
     Signal::derive(cx, move || {
         let mut features_out: Vec<Feature> = get_base_features(cx)();
 

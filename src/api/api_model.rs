@@ -188,3 +188,36 @@ pub struct Background {
     #[serde(rename = "document__url")]
     pub document_url: String,
 }
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WeaponApi {
+    pub count: i64,
+    pub next: String,
+    pub previous: Value,
+    pub results: Vec<Weapon>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Weapon {
+    pub name: String,
+    pub slug: String,
+    pub category: String,
+    #[serde(rename = "document__slug")]
+    pub document_slug: String,
+    #[serde(rename = "document__title")]
+    pub document_title: String,
+    #[serde(rename = "document__license_url")]
+    pub document_license_url: String,
+    #[serde(rename = "document__url")]
+    pub document_url: String,
+    pub cost: String,
+    #[serde(rename = "damage_dice")]
+    pub damage_dice: String,
+    #[serde(rename = "damage_type")]
+    pub damage_type: String,
+    pub weight: String,
+    #[serde(default)]
+    pub properties: Option<Vec<String>>,
+}
