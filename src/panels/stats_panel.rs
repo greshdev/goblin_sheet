@@ -8,6 +8,7 @@ use crate::character_model::{
     AbilityScores, AbilityScoresReactive, CharacterDetails,
 };
 use crate::components::*;
+use crate::dice::roll_dice;
 
 pub fn StatsPanel(cx: Scope) -> HtmlElement<Div> {
     let ability_scores = expect_context::<AbilityScoresReactive>(cx);
@@ -105,7 +106,14 @@ fn AbilityScoreBox(
                 .style("width", "4rem")
                 .style("height", "4rem")
                 .style("text-align", "center")
-                .child(h2(cx).child(score_mod).style("margin-top", "-10%")),
+                .child(h2(cx).child(score_mod).style("margin-top", "-10%"))
+                .on(ev::click, move |_| roll_dice(
+                    &if score_mod() > 0 {
+                        format!("1d20 + {}", score_mod())
+                    } else {
+                        "1d20".to_owned()
+                    }
+                )),
         )
         .child(
             input(cx)

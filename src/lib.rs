@@ -3,12 +3,14 @@
 mod api;
 mod character_model;
 mod components;
+mod dice;
 mod markdown;
 mod panels;
 
 use crate::api::FuturesWrapper;
 use crate::character_model::*;
 use crate::components::*;
+use crate::dice::roll_dice;
 use api::api_extensions::*;
 use api::api_model;
 use api::api_model::Background;
@@ -170,6 +172,9 @@ pub fn App(cx: Scope) -> impl IntoView {
     // RENDER
     // ==============
     vec![
+        div(cx)
+            .id("dice-box")
+            .classes("position-absolute top-0 start-0 w-100 h-100 pe-none"),
         div(cx).classes("position-absolute top-0 start-0").child(
             a(cx).child("Reset").on(ev::click, move |_| {
                 // Reset all global data to default
