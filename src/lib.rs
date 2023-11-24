@@ -20,7 +20,7 @@ use panels::header_panel::HeaderPanel;
 use panels::proficencies_panel::ProfPanel;
 use panels::stats_panel::StatsPanel;
 
-use leptos::{component, IntoView, Scope};
+use leptos::{component, IntoView};
 use leptos::{html::*, *};
 
 const CHAR_STORAGE_KEY: &str = "char_sheet_character";
@@ -127,135 +127,129 @@ pub struct FeaturesWrapper {
 }
 
 #[component]
-pub fn App(cx: Scope) -> impl IntoView {
+pub fn App() -> impl IntoView {
     // Create reactive signal to store character state
-    let character = create_rw_signal(cx, load_character());
+    let character = create_rw_signal(load_character());
     // Store that state globally
-    provide_context(cx, character);
+    provide_context(character);
 
     // Update local storage whenever the character details change
-    create_effect(cx, move |_| write_character_to_local_storage(character));
+    create_effect(move |_| write_character_to_local_storage(character));
 
     // Create wrapper for async access to data from Open5e
     // and store it globally
-    provide_context(cx, FuturesWrapper::new(cx));
+    provide_context(FuturesWrapper::new());
 
     // TODO: Fix bug where selected optional features for a class are
     // retained if you change classes?
     let selected_optional_features: RwSignal<Vec<FeatureOptionsSelection>> =
-        create_rw_signal(cx, load_selected_optional_features());
-    provide_context(cx, selected_optional_features);
+        create_rw_signal(load_selected_optional_features());
+    provide_context(selected_optional_features);
 
     // Update local storage when the selected optional features change
-    create_effect(cx, move |_| {
+    create_effect(move |_| {
         write_optional_features_to_local_storage(selected_optional_features)
     });
 
-    provide_context(
-        cx,
-        AbilityScoresReactive {
-            ability_scores: create_read_slice(cx, character, |c| {
-                c.ability_scores.clone()
-            }),
-            asis: get_current_asis(cx),
-        },
-    );
+    provide_context(AbilityScoresReactive {
+        ability_scores: create_read_slice(character, |c| {
+            c.ability_scores.clone()
+        }),
+        asis: get_current_asis(),
+    });
 
     let attack_list: RwSignal<Vec<AttackAction>> =
-        create_rw_signal(cx, load_attack_list());
-    provide_context(cx, attack_list);
-    create_effect(cx, move |_| write_attack_list_to_local_storage(attack_list));
+        create_rw_signal(load_attack_list());
+    provide_context(attack_list);
+    create_effect(move |_| write_attack_list_to_local_storage(attack_list));
 
     // ==============
     // RENDER
     // ==============
     vec![
-        div(cx).classes("position-absolute top-0 start-0").child(
-            a(cx).child("Reset").on(ev::click, move |_| {
+        div().classes("position-absolute top-0 start-0").child(
+            a().child("Reset").on(ev::click, move |_| {
                 // Reset all global data to default
                 character.update(|c| *c = CharacterDetails::new());
                 selected_optional_features.update(|s| *s = vec![]);
                 attack_list.update(|a| *a = vec![])
             }),
         ),
-        HeaderPanel(cx),
+        HeaderPanel(),
         // Stats row
-        div(cx).classes("container").child(StatsPanel(cx)),
-        div(cx).attr("class", "container").child(
-            GridRow(cx)
+        div().classes("container").child(StatsPanel()),
+        div().attr("class", "container").child(
+            GridRow()
                 // Left column
-                .child(GridCol(cx).child(ProfPanel(cx)))
+                .child(GridCol().child(ProfPanel()))
                 // Center column
-                .child(CenterColumn(cx))
+                .child(CenterColumn())
                 // Right column
-                .child(RightColumn(cx)),
+                .child(RightColumn()),
         ),
-        // OptionSelectionModal(cx),
-        div(cx)
-            .classes("position-absolute bottom-0 end-0 p-3")
-            .child(
-                a(cx)
-                    .child(
-                        img(cx)
-                            .attr("src", "github-mark-white.svg")
-                            .attr("alt", "Github Logo")
-                            .style("height", "5vh")
-                            .style("width", "5vh"),
-                    )
-                    .attr("href", "https://github.com/greshdev/goblin_sheet"),
-            ),
+        // OptionSelectionModal(),
+        div().classes("position-absolute bottom-0 end-0 p-3").child(
+            a().child(
+                img()
+                    .attr("src", "github-mark-white.svg")
+                    .attr("alt", "Github Logo")
+                    .style("height", "5vh")
+                    .style("width", "5vh"),
+            )
+            .attr("href", "https://github.com/greshdev/goblin_sheet"),
+        ),
     ]
 }
 
-pub fn CenterColumn(cx: Scope) -> HtmlDiv {
-    GridCol(cx)
+pub fn CenterColumn() -> HtmlDiv {
+    GridCol()
         .child(
-            div(cx).classes("container border rounded pt-2 mb-2").child(
-                GridRow(cx).child([ProfBonusBox(cx), ACBox(cx), HPBox(cx)]),
-            ),
+            div()
+                .classes("container border rounded pt-2 mb-2")
+                .child(GridRow().child([ProfBonusBox(), ACBox(), HPBox()])),
         )
         .child(
-            BoxedColumnFlexible(cx)
+            BoxedColumnFlexible()
                 .style("height", "49.5vh")
-                .child(CenterPanel(cx)),
+                .child(CenterPanel()),
         )
 }
 
-fn ProfBonusBox(cx: Scope) -> HtmlElement<Div> {
-    GridCol(cx).child(
-        div(cx)
+fn ProfBonusBox() -> HtmlElement<Div> {
+    GridCol().child(
+        div()
             .classes("d-flex flex-column align-items-center")
             .child("Proficiency")
             .child([
-                div(cx)
+                div()
                 .classes("border rounded my-auto d-flex align-items-center justify-content-center")
                 .style("width", "4rem")
                 .style("height", "4rem")
                 .style("text-align", "center")
-                //.child(div(cx))
+                //.child(div())
                 .child(
-                    h2(cx)
-                        .child(get_prof_bonus(cx))
+                    h2()
+                        .child(get_prof_bonus())
                         .style("margin-top", "-10%")),
-                div(cx).child("Bonus")]
+                div().child("Bonus")]
             )
         )
 }
-fn HPBox(cx: Scope) -> HtmlElement<Div> {
-    GridCol(cx).child(
-        div(cx)
+fn HPBox() -> HtmlElement<Div> {
+    GridCol().child(
+        div()
         .classes("d-flex flex-column align-items-center")
         .child("HP")
         .child(
-            div(cx)
+            div()
                 .classes("border rounded my-auto d-flex align-items-center justify-content-center")
                 .style("width", "4rem")
                 .style("height", "4rem")
                 .style("text-align", "center")
-                //.child(div(cx))
-                .child(h2(cx).child(
-                    input(cx)
-                        .prop("value", get_current_hp(cx))
+                //.child(div())
+                .child(h2().child(
+                    input()
+                        .prop("value", get_current_hp())
                         .classes("mx-auto w-100")
                         //.style("margin-top", "-1rem")
                         .style("text-align", "center")
@@ -265,30 +259,30 @@ fn HPBox(cx: Scope) -> HtmlElement<Div> {
                 .style("margin-top", "-10%")),
             )
             .child(
-                div(cx)
+                div()
                     .classes("border rounded mx-auto pt-1")
                     .style("width", "2rem")
                     .style("height", "2rem")
                     .style("margin-top", "-1rem")
                     .style("text-align", "center")
                     .style("background", "var(--bs-body-bg)")
-                    .child(get_max_hp(cx))
+                    .child(get_max_hp())
             )
     )
 }
-fn ACBox(cx: Scope) -> HtmlElement<Div> {
-    GridCol(cx).child(
-        div(cx)
+fn ACBox() -> HtmlElement<Div> {
+    GridCol().child(
+        div()
             .classes("d-flex flex-column align-items-center")
             .child("AC")
-            .child([div(cx)
+            .child([div()
                 .classes("border rounded my-auto")
                 .classes("d-flex align-items-center justify-content-center")
                 .style("width", "4rem")
                 .style("height", "4rem")
                 .style("text-align", "center")
-                //.child(div(cx))
-                .child(h2(cx).style("margin-top", "-10%"))]),
+                //.child(div())
+                .child(h2().style("margin-top", "-10%"))]),
     )
 }
 
@@ -298,59 +292,54 @@ fn ACBox(cx: Scope) -> HtmlElement<Div> {
  *
  *===================================*/
 
-pub fn RightColumn(cx: Scope) -> HtmlDiv {
-    GridCol(cx).child(
-        ScrollableContainerBox(cx)
-            .child(h1(cx).child("Features:"))
-            .child(FeaturePanel(
-                cx,
-                ClassTab(cx),
-                SpeciesTab(cx),
-                BackgroundTab(cx),
-            )),
+pub fn RightColumn() -> HtmlDiv {
+    GridCol().child(
+        ScrollableContainerBox()
+            .child(h1().child("Features:"))
+            .child(FeaturePanel(ClassTab(), SpeciesTab(), BackgroundTab())),
     )
 }
 
-pub fn get_prof_bonus(cx: Scope) -> Signal<i32> {
-    let character = expect_context::<RwSignal<CharacterDetails>>(cx);
-    create_read_slice(cx, character, CharacterDetails::prof_bonus)
+pub fn get_prof_bonus() -> Signal<i32> {
+    let character = expect_context::<RwSignal<CharacterDetails>>();
+    create_read_slice(character, CharacterDetails::prof_bonus)
 }
 
-pub fn get_level(cx: Scope) -> Signal<i32> {
-    let character = expect_context::<RwSignal<CharacterDetails>>(cx);
-    create_read_slice(cx, character, CharacterDetails::level)
+pub fn get_level() -> Signal<i32> {
+    let character = expect_context::<RwSignal<CharacterDetails>>();
+    create_read_slice(character, CharacterDetails::level)
 }
 
-pub fn get_species(cx: Scope) -> Signal<String> {
-    let character = expect_context::<RwSignal<CharacterDetails>>(cx);
-    create_read_slice(cx, character, |c| c.species.to_string())
+pub fn get_species() -> Signal<String> {
+    let character = expect_context::<RwSignal<CharacterDetails>>();
+    create_read_slice(character, |c| c.species.to_string())
 }
 
-pub fn get_subspecies(cx: Scope) -> Signal<String> {
-    let character = expect_context::<RwSignal<CharacterDetails>>(cx);
-    create_read_slice(cx, character, |c| c.subspecies.to_string())
+pub fn get_subspecies() -> Signal<String> {
+    let character = expect_context::<RwSignal<CharacterDetails>>();
+    create_read_slice(character, |c| c.subspecies.to_string())
 }
 
-pub fn set_subspecies(cx: Scope) -> SignalSetter<String> {
-    let character = expect_context::<RwSignal<CharacterDetails>>(cx);
-    create_write_slice(cx, character, |c, v| c.subspecies = v)
+pub fn set_subspecies() -> SignalSetter<String> {
+    let character = expect_context::<RwSignal<CharacterDetails>>();
+    create_write_slice(character, |c, v| c.subspecies = v)
 }
 
-pub fn get_class(cx: Scope) -> Signal<String> {
-    let character = expect_context::<RwSignal<CharacterDetails>>(cx);
-    create_read_slice(cx, character, |c| c.class.to_string())
+pub fn get_class() -> Signal<String> {
+    let character = expect_context::<RwSignal<CharacterDetails>>();
+    create_read_slice(character, |c| c.class.to_string())
 }
 
-pub fn get_background(cx: Scope) -> Signal<String> {
-    let character = expect_context::<RwSignal<CharacterDetails>>(cx);
-    create_read_slice(cx, character, |c| c.background.to_string())
+pub fn get_background() -> Signal<String> {
+    let character = expect_context::<RwSignal<CharacterDetails>>();
+    create_read_slice(character, |c| c.background.to_string())
 }
 
-pub fn get_current_species(cx: Scope) -> Signal<Option<Species>> {
-    let api_data = expect_context::<FuturesWrapper>(cx);
-    Signal::derive(cx, move || {
-        let species = get_species(cx)();
-        if let Some(species_list) = api_data.species.read(cx) {
+pub fn get_current_species() -> Signal<Option<Species>> {
+    let api_data = expect_context::<FuturesWrapper>();
+    Signal::derive(move || {
+        let species = get_species()();
+        if let Some(species_list) = api_data.species.get() {
             species_list.iter().find(|s| s.slug == species).cloned()
         } else {
             None
@@ -360,10 +349,10 @@ pub fn get_current_species(cx: Scope) -> Signal<Option<Species>> {
 
 // Only returns a result if the current subspecies is a subspecies
 // of the current species.
-pub fn get_current_subspecies(cx: Scope) -> Signal<Option<Subspecies>> {
-    Signal::derive(cx, move || {
-        let subspecies = get_subspecies(cx)();
-        if let Some(species) = get_current_species(cx)() {
+pub fn get_current_subspecies() -> Signal<Option<Subspecies>> {
+    Signal::derive(move || {
+        let subspecies = get_subspecies()();
+        if let Some(species) = get_current_species()() {
             species
                 .subraces
                 .iter()
@@ -375,11 +364,11 @@ pub fn get_current_subspecies(cx: Scope) -> Signal<Option<Subspecies>> {
     })
 }
 
-pub fn get_current_class(cx: Scope) -> Signal<Option<api_model::Class>> {
-    let api_data = expect_context::<FuturesWrapper>(cx);
-    Signal::derive(cx, move || {
-        let class = get_class(cx)();
-        if let Some(class_list) = api_data.classes.read(cx) {
+pub fn get_current_class() -> Signal<Option<api_model::Class>> {
+    let api_data = expect_context::<FuturesWrapper>();
+    Signal::derive(move || {
+        let class = get_class()();
+        if let Some(class_list) = api_data.classes.get() {
             class_list.iter().find(|s| s.slug == class).cloned()
         } else {
             None
@@ -387,11 +376,11 @@ pub fn get_current_class(cx: Scope) -> Signal<Option<api_model::Class>> {
     })
 }
 
-pub fn get_current_background(cx: Scope) -> Signal<Option<Background>> {
-    let api_data = expect_context::<FuturesWrapper>(cx);
-    Signal::derive(cx, move || {
-        let background = get_background(cx)();
-        if let Some(background_list) = api_data.backgrounds.read(cx) {
+pub fn get_current_background() -> Signal<Option<Background>> {
+    let api_data = expect_context::<FuturesWrapper>();
+    Signal::derive(move || {
+        let background = get_background()();
+        if let Some(background_list) = api_data.backgrounds.get() {
             background_list
                 .iter()
                 .find(|s| s.slug == background)
@@ -402,9 +391,9 @@ pub fn get_current_background(cx: Scope) -> Signal<Option<Background>> {
     })
 }
 
-pub fn get_base_hp(cx: Scope) -> Signal<i32> {
-    Signal::derive(cx, move || {
-        if let Some(class) = get_current_class(cx)() {
+pub fn get_base_hp() -> Signal<i32> {
+    Signal::derive(move || {
+        if let Some(class) = get_current_class()() {
             class.base_hp()
         } else {
             0
@@ -412,19 +401,19 @@ pub fn get_base_hp(cx: Scope) -> Signal<i32> {
     })
 }
 
-pub fn get_current_hp(cx: Scope) -> Signal<i32> {
-    let ability_scores = expect_context::<AbilityScoresReactive>(cx);
-    Signal::derive(cx, move || {
-        get_base_hp(cx)() + (ability_scores.con_mod() * get_level(cx)())
+pub fn get_current_hp() -> Signal<i32> {
+    let ability_scores = expect_context::<AbilityScoresReactive>();
+    Signal::derive(move || {
+        get_base_hp()() + (ability_scores.con_mod() * get_level()())
     })
 }
 
-pub fn get_max_hp(cx: Scope) -> Signal<i32> {
-    get_current_hp(cx)
+pub fn get_max_hp() -> Signal<i32> {
+    get_current_hp()
 }
 
-pub fn get_base_features(cx: Scope) -> Signal<Vec<Feature>> {
-    Signal::derive(cx, move || {
+pub fn get_base_features() -> Signal<Vec<Feature>> {
+    Signal::derive(move || {
         let mut features_out: Vec<Feature> = vec![];
 
         // These are currently the only character properties
@@ -433,39 +422,37 @@ pub fn get_base_features(cx: Scope) -> Signal<Vec<Feature>> {
         // Subclass should be added later.
 
         // Species
-        if let Some(species_def) = get_current_species(cx)() {
+        if let Some(species_def) = get_current_species()() {
             features_out.append(&mut species_def.features());
         }
 
         // Subspecies
-        if let Some(subspecies_def) = get_current_subspecies(cx)() {
+        if let Some(subspecies_def) = get_current_subspecies()() {
             let f = &mut subspecies_def.features();
             features_out.append(f);
         }
 
         // Class
-        if let Some(class) = get_current_class(cx)() {
+        if let Some(class) = get_current_class()() {
             features_out.append(&mut class.features());
         }
 
         // Background
-        if let Some(background) = get_current_background(cx)() {
+        if let Some(background) = get_current_background()() {
             features_out.append(&mut background.features());
         }
 
         features_out
             .iter()
-            .filter(|f| f.level <= get_level(cx)())
+            .filter(|f| f.level <= get_level()())
             .cloned()
             .collect::<Vec<Feature>>()
     })
 }
 
-pub fn get_optional_features(
-    cx: Scope,
-) -> Signal<Vec<(String, FeatureOptions)>> {
-    Signal::derive(cx, move || {
-        get_base_features(cx)()
+pub fn get_optional_features() -> Signal<Vec<(String, FeatureOptions)>> {
+    Signal::derive(move || {
+        get_base_features()()
             .iter()
             .filter_map(|f| {
                 if let FeatureType::Option(op) = &f.feature_type {
@@ -478,16 +465,16 @@ pub fn get_optional_features(
     })
 }
 
-pub fn get_current_features(cx: Scope) -> Signal<Vec<Feature>> {
+pub fn get_current_features() -> Signal<Vec<Feature>> {
     let selected_optional_features =
-        expect_context::<RwSignal<Vec<FeatureOptionsSelection>>>(cx);
+        expect_context::<RwSignal<Vec<FeatureOptionsSelection>>>();
 
-    Signal::derive(cx, move || {
-        let mut features_out: Vec<Feature> = get_base_features(cx)();
+    Signal::derive(move || {
+        let mut features_out: Vec<Feature> = get_base_features()();
 
         selected_optional_features.with(|selected| {
             for select in selected {
-                let op_features = get_optional_features(cx)();
+                let op_features = get_optional_features()();
                 let option = op_features.iter().find_map(|(slug, op_feat)| {
                     if select.slug.contains(&slug.to_string()) {
                         Some(op_feat)
@@ -509,9 +496,9 @@ pub fn get_current_features(cx: Scope) -> Signal<Vec<Feature>> {
     })
 }
 
-pub fn get_current_asis(cx: Scope) -> Signal<Vec<CharacterAsi>> {
-    Signal::derive(cx, move || {
-        get_current_features(cx)()
+pub fn get_current_asis() -> Signal<Vec<CharacterAsi>> {
+    Signal::derive(move || {
+        get_current_features()()
             .iter()
             .filter_map(|f| {
                 if let FeatureType::Asi(asi) = &f.feature_type {
@@ -525,9 +512,9 @@ pub fn get_current_asis(cx: Scope) -> Signal<Vec<CharacterAsi>> {
     })
 }
 
-pub fn get_skill_proficencies(cx: Scope) -> Signal<Vec<String>> {
-    Signal::derive(cx, move || {
-        get_current_features(cx)()
+pub fn get_skill_proficencies() -> Signal<Vec<String>> {
+    Signal::derive(move || {
+        get_current_features()()
             .iter()
             .filter_map(|f| {
                 if let FeatureType::SkillProficency(prof) = &f.feature_type {

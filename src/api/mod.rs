@@ -1,9 +1,9 @@
-use leptos::{create_local_resource, log, Resource, Scope};
-
 use self::api_model::{
     Background, BackgroundsAPI, Class, ClassesAPI, Species, SpeciesAPI, Weapon,
     WeaponApi,
 };
+use leptos::leptos_dom::log;
+use leptos::{create_local_resource, Resource};
 
 pub mod api_extensions;
 pub mod api_model;
@@ -16,12 +16,12 @@ pub struct FuturesWrapper {
     pub weapons: Resource<(), Vec<Weapon>>,
 }
 impl FuturesWrapper {
-    pub fn new(cx: Scope) -> Self {
+    pub fn new() -> Self {
         Self {
-            classes: create_local_resource(cx, || (), fetch_classes),
-            species: create_local_resource(cx, || (), fetch_species),
-            backgrounds: create_local_resource(cx, || (), fetch_backgrounds),
-            weapons: create_local_resource(cx, || (), fetch_weapons),
+            classes: create_local_resource(|| (), fetch_classes),
+            species: create_local_resource(|| (), fetch_species),
+            backgrounds: create_local_resource(|| (), fetch_backgrounds),
+            weapons: create_local_resource(|| (), fetch_weapons),
         }
     }
 }
@@ -117,7 +117,7 @@ pub async fn fetch_weapons(_: ()) -> Vec<Weapon> {
             Ok(api) => api.results,
             // Handle deserialization error condition
             Err(e) => {
-                log!("Could not deserialize data from Open5e to the WeaponAPI struct!");
+                log!("Could not de>serialize data from Open5e to the WeaponAPI struct!");
                 log!("{}", e);
                 vec![]
             }

@@ -1,8 +1,8 @@
+use super::api_model::*;
 use crate::character_model::{Ability, AttackAction, AttackType, CharacterAsi};
 use lazy_regex::{regex, regex_captures};
+use leptos::leptos_dom::log;
 use serde::{Deserialize, Serialize};
-
-use super::api_model::*;
 
 #[derive(Default, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Feature {
@@ -455,7 +455,7 @@ impl Background {
                     features.push(feature);
                 }
             }
-            //log!("{}", tool_prof_string);
+            log!("{}", tool_prof_string);
         }
         if let Some(languages_string) = &self.languages {
             if languages_string == "One language of your choice, typically your adopted parents' language (if any)"{
