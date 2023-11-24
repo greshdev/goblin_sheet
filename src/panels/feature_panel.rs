@@ -63,7 +63,7 @@ pub fn ClassTab() -> HtmlDiv {
             .iter()
             .filter(filter)
             .cloned()
-            .map(|f| FeatureDiv(f))
+            .map(FeatureDiv)
             .collect::<DivList>()
     };
     div().child(

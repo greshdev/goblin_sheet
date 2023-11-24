@@ -69,7 +69,7 @@ fn ActionsTab() -> HtmlDiv {
                 .child(move || {
                     attack_list.with(|list| {
                         list.iter()
-                            .map(|attack| AttackActionDisplay(attack))
+                            .map(AttackActionDisplay)
                             .collect::<DivList>()
                     })
                 }),
