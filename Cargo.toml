@@ -9,17 +9,17 @@ license-file = "LICENSE.txt"
 [dependencies]
 leptos = { version = "0.5.2", features = ["csr", "nightly"] }
 console_log = "1"
-log = "0.4"
+log = "0.4.2"
 console_error_panic_hook = "0.1.7"
-serde = "1.0.164"
-serde_json = "1.0.99"
+serde = "1.0.193"
+serde_json = "1.0.108"
 reqwasm = "0.5.0"
-comrak = "0.18.0"
-web-sys = { version = "0.3.64", features = ["Storage"] }
-lazy-regex = "3.0.0"
+comrak = "0.19.0"
+web-sys = { version = "0.3.65", features = ["Storage"] }
+lazy-regex = "3.1.0"
 
 [dependencies.uuid]
-version = "1.4.0"
+version = "1.6.1"
 features = [
     "v4",                
     "fast-rng",          
