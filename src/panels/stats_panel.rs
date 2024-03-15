@@ -93,6 +93,7 @@ fn AbilityScoreBox(
                 .style("width", "4rem")
                 .style("height", "4rem")
                 .style("text-align", "center")
+                .style("cursor", "pointer")
                 .child(h2().child(score_mod).style("margin-top", "-10%"))
                 .on(ev::click, move |_| roll_dice(
                     &if score_mod() > 0 {

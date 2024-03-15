@@ -109,9 +109,9 @@ fn ClassOptionList(classes: &[Class], class: Signal<String>) -> OptionList {
         .iter()
         .map(|c| {
             option()
-                .prop("value", c.slug.clone())
+                .prop("value", &c.slug)
                 .prop("selected", c.slug == class())
-                .child(c.name.clone())
+                .child(&c.name)
         })
         .collect::<OptionList>()
 }

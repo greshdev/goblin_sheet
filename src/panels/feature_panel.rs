@@ -51,14 +51,13 @@ pub fn FeaturePanel(
 /// features from the character's class
 pub fn ClassTab() -> HtmlDiv {
     let features = get_current_features();
-    let filter = |f: &&Feature| {
+    let filter = |f: &Feature| {
         f.source_slug.split(':').next() == Some("class") && !f.hidden
     };
     let feature_list = move || {
         features()
-            .iter()
+            .into_iter()
             .filter(filter)
-            .cloned()
             .map(FeatureDiv)
             .collect::<DivList>()
     };
@@ -72,32 +71,32 @@ pub fn ClassTab() -> HtmlDiv {
 
 fn FeatureDiv(f: Feature) -> HtmlDiv {
     let f_desc = f.desc.to_string();
-    let feature_display = match f.feature_type.clone() {
+    let feature_display = match &f.feature_type {
         FeatureType::Option(feature_op) => {
             RenderOptionFeature(feature_op, f_desc, &f.feature_slug())
         }
         _ => div().inner_html(parse_markdown_table(&f.desc)),
     };
     AccordionItem(
-        div().child(format!("{} (Level {})", f.name.clone(), f.level)),
+        div().child(format!("{} (Level {})", f.name, f.level)),
         div().child(feature_display),
     )
 }
 
 fn RenderOptionFeature(
-    feature_op: FeatureOptions,
+    feature_op: &FeatureOptions,
     f_desc: String,
     f_slug: &String,
 ) -> HtmlDiv {
     let num_choices = feature_op.num_choices;
-    let options = feature_op.options;
+    let options = &feature_op.options;
     let generate_dropdown = |i: i32| {
         // We need this slug to represent BOTH
         // the feature this selection came from,
         // as well as WHICH option box it was
         // selected in.
         let slug = format!("{}:{}", f_slug, i);
-        FeatureOptionDropdown(slug, &options)
+        FeatureOptionDropdown(slug, options)
     };
     let dropdowns = (0..num_choices)
         .map(generate_dropdown)
@@ -221,15 +220,15 @@ fn SpeciesDisplay(species: Species) -> HtmlDiv {
     let character = expect_context::<RwSignal<CharacterDetails>>();
     let get_subspecies =
         create_read_slice(character, |c| c.subspecies.to_string());
-    let subspecies_list = species.subraces.clone();
+    //let subspecies_list = species.subraces.clone();
     let mut features = species.features();
     let my_subspecies =
-        subspecies_list.iter().find(|s| s.slug == get_subspecies());
+        species.subraces.iter().find(|s| s.slug == get_subspecies());
     if let Some(subspecies) = my_subspecies {
         features.append(&mut subspecies.features());
     }
-    let dropdown_maybe = if !subspecies_list.is_empty() {
-        div().child(SubspeciesDropdown(subspecies_list))
+    let dropdown_maybe = if !species.subraces.is_empty() {
+        div().child(SubspeciesDropdown(species.subraces))
     } else {
         div()
     };
@@ -241,7 +240,7 @@ fn SpeciesDisplay(species: Species) -> HtmlDiv {
                 .filter(|f| !f.hidden)
                 .map(|f| {
                     AccordionItem(
-                        div().child(f.name.clone()),
+                        div().child(&f.name),
                         div().inner_html(parse_markdown_table(&f.desc)),
                     )
                 })

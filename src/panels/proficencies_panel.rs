@@ -8,10 +8,10 @@ pub fn ProfPanel() -> HtmlElement<Div> {
     let features = get_current_features();
     let saves = Signal::derive(move || {
         features()
-            .iter()
+            .into_iter()
             .filter_map(|f| {
-                if let FeatureType::SavingThrow(ability) = &f.feature_type {
-                    Some(ability.clone())
+                if let FeatureType::SavingThrow(ability) = f.feature_type {
+                    Some(ability)
                 } else {
                     None
                 }
@@ -20,28 +20,26 @@ pub fn ProfPanel() -> HtmlElement<Div> {
     });
     let skills = Signal::derive(move || {
         features()
-            .iter()
+            .into_iter()
             .filter_map(|f| {
-                if let FeatureType::SkillProficency(prof) = &f.feature_type {
+                if let FeatureType::SkillProficency(prof) = f.feature_type {
                     Some(prof)
                 } else {
                     None
                 }
             })
-            .cloned()
             .collect::<Vec<String>>()
     });
     let other_profs = Signal::derive(move || {
         features()
-            .iter()
+            .into_iter()
             .filter_map(|f| {
-                if let FeatureType::OtherProficency(prof) = &f.feature_type {
+                if let FeatureType::OtherProficency(prof) = f.feature_type {
                     Some(prof)
                 } else {
                     None
                 }
             })
-            .cloned()
             .collect::<Vec<String>>()
     });
     BoxedColumn()
@@ -96,7 +94,7 @@ pub fn SavesDisplay(saves: Signal<Vec<Ability>>) -> HtmlDiv {
                             calc_save(
                                 ability_scores,
                                 saves,
-                                ability.clone(),
+                                ability,
                                 get_prof_bonus(),
                             )
                         })),
@@ -110,15 +108,15 @@ pub fn SavesDisplay(saves: Signal<Vec<Ability>>) -> HtmlDiv {
 fn calc_save(
     ability_scores: AbilityScoresReactive,
     saves: Signal<Vec<Ability>>,
-    ability: Ability,
+    ability: &Ability,
     proficiency_bonus: Signal<i32>,
 ) -> i32 {
-    let bonus = if saves().contains(&ability) {
+    let bonus = if saves().contains(ability) {
         proficiency_bonus()
     } else {
         0
     };
-    ability_scores.get_ability_mod(&ability) + bonus
+    ability_scores.get_ability_mod(ability) + bonus
 }
 
 pub fn SkillsTab(skills: Signal<Vec<String>>) -> HtmlDiv {

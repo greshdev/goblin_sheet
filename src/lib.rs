@@ -344,7 +344,7 @@ pub fn get_current_species() -> Signal<Option<Species>> {
     Signal::derive(move || {
         let species = get_species()();
         if let Some(species_list) = api_data.species.get() {
-            species_list.iter().find(|s| s.slug == species).cloned()
+            species_list.into_iter().find(|s| s.slug == species)
         } else {
             None
         }
@@ -357,11 +357,7 @@ pub fn get_current_subspecies() -> Signal<Option<Subspecies>> {
     Signal::derive(move || {
         let subspecies = get_subspecies()();
         if let Some(species) = get_current_species()() {
-            species
-                .subraces
-                .iter()
-                .find(|s| s.slug == subspecies)
-                .cloned()
+            species.subraces.into_iter().find(|s| s.slug == subspecies)
         } else {
             None
         }
@@ -373,7 +369,7 @@ pub fn get_current_class() -> Signal<Option<api_model::Class>> {
     Signal::derive(move || {
         let class = get_class()();
         if let Some(class_list) = api_data.classes.get() {
-            class_list.iter().find(|s| s.slug == class).cloned()
+            class_list.into_iter().find(|s| s.slug == class)
         } else {
             None
         }
@@ -385,10 +381,7 @@ pub fn get_current_background() -> Signal<Option<Background>> {
     Signal::derive(move || {
         let background = get_background()();
         if let Some(background_list) = api_data.backgrounds.get() {
-            background_list
-                .iter()
-                .find(|s| s.slug == background)
-                .cloned()
+            background_list.into_iter().find(|s| s.slug == background)
         } else {
             None
         }
@@ -447,9 +440,8 @@ pub fn get_base_features() -> Signal<Vec<Feature>> {
         }
 
         features_out
-            .iter()
+            .into_iter()
             .filter(|f| f.level <= get_level()())
-            .cloned()
             .collect::<Vec<Feature>>()
     })
 }
@@ -457,10 +449,11 @@ pub fn get_base_features() -> Signal<Vec<Feature>> {
 pub fn get_optional_features() -> Signal<Vec<(String, FeatureOptions)>> {
     Signal::derive(move || {
         get_base_features()()
-            .iter()
+            .into_iter()
             .filter_map(|f| {
-                if let FeatureType::Option(op) = &f.feature_type {
-                    Some((f.feature_slug(), op.clone()))
+                let slug = f.feature_slug();
+                if let FeatureType::Option(op) = f.feature_type {
+                    Some((slug, op))
                 } else {
                     None
                 }
@@ -503,15 +496,14 @@ pub fn get_current_features() -> Signal<Vec<Feature>> {
 pub fn get_current_asis() -> Signal<Vec<CharacterAsi>> {
     Signal::derive(move || {
         get_current_features()()
-            .iter()
+            .into_iter()
             .filter_map(|f| {
-                if let FeatureType::Asi(asi) = &f.feature_type {
+                if let FeatureType::Asi(asi) = f.feature_type {
                     Some(asi)
                 } else {
                     None
                 }
             })
-            .cloned()
             .collect::<Vec<CharacterAsi>>()
     })
 }
@@ -519,15 +511,14 @@ pub fn get_current_asis() -> Signal<Vec<CharacterAsi>> {
 pub fn get_skill_proficencies() -> Signal<Vec<String>> {
     Signal::derive(move || {
         get_current_features()()
-            .iter()
+            .into_iter()
             .filter_map(|f| {
-                if let FeatureType::SkillProficency(prof) = &f.feature_type {
+                if let FeatureType::SkillProficency(prof) = f.feature_type {
                     Some(prof)
                 } else {
                     None
                 }
             })
-            .cloned()
             .collect::<Vec<String>>()
     })
 }

@@ -74,7 +74,7 @@ pub fn BoxedColumnFlexible() -> HtmlDiv {
 }
 
 pub fn AccordionHeader(
-    accordion_id: String,
+    accordion_id: &str,
     content: HtmlDiv,
 ) -> HtmlElement<H2> {
     h2().classes("accordion-header").child(
@@ -83,7 +83,7 @@ pub fn AccordionHeader(
             .prop("type", "button")
             .attr("data-bs-toggle", "collapse")
             .attr("data-bs-target", format!("#{}", accordion_id))
-            .attr("aria-controls", accordion_id)
+            .attr("aria-controls", accordion_id.to_string())
             .child(content),
     )
 }
@@ -95,7 +95,7 @@ pub fn AccordionItem(
     let id = format!("collapse-{}", Uuid::new_v4());
     div()
         .classes("accordion-item")
-        .child(AccordionHeader(id.clone(), header_content))
+        .child(AccordionHeader(&id, header_content))
         .child(
             div()
                 .id(id)

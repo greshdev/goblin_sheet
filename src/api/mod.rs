@@ -86,9 +86,8 @@ pub async fn fetch_backgrounds(_: ()) -> Vec<Background> {
         Ok(response) => match response.json::<BackgroundsAPI>().await {
             Ok(api) => api
                 .results
-                .iter()
+                .into_iter()
                 .filter(|b| b.document_slug != "a5e")
-                .cloned()
                 .collect(),
             // Handle deserialization error condition
             Err(e) => {

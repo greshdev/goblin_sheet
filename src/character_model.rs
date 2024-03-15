@@ -116,9 +116,8 @@ impl AbilityScoresReactive {
     }
     fn asis_for_score(&self, score: Ability) -> Vec<CharacterAsi> {
         self.all_asis()
-            .iter()
+            .into_iter()
             .filter(|a| a.score == score)
-            .cloned()
             .collect::<Vec<CharacterAsi>>()
     }
     pub fn str_score(&self) -> i32 {
