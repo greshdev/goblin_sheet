@@ -197,7 +197,7 @@ pub fn App(cx: Scope) -> impl IntoView {
         ),
         // OptionSelectionModal(cx),
         div(cx)
-            .classes("position-absolute bottom-0 end-0 p-3")
+            .classes("position-absolute bottom-0 end-0 p-3 z-2")
             .child(
                 a(cx)
                     .child(

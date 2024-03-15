@@ -34,8 +34,10 @@ export function roll_dice(dice_string) {
         // We need to set the tab index for the canvas dice box will render on
         // to -1, so that it renders above items with a tab index of 0 (such
         // as certain list elements in Bootstrap)
-        Box.init().then(async (_) => Box.roll([dice_string], options))
+        Box.init().then(async (_) => {
+            Box.roll([dice_string], options).then(results => console.log(results));
+        })
     } else {
-        Box.roll([dice_string], options);
+        Box.roll([dice_string], options).then(results => console.log(results));
     }
 }
