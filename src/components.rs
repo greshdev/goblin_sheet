@@ -1,38 +1,38 @@
 #![allow(dead_code)]
-use leptos::{html::*, Scope};
+use leptos::html::*;
 use uuid::Uuid;
 
-/* pub fn FlexRow(cx: Scope) -> HtmlDiv {
-    div(cx).attr("class", "d-flex flex-row mb-3")
+/* pub fn FlexRow() -> HtmlDiv {
+    div().attr("class", "d-flex flex-row mb-3")
 } */
 
 pub type HtmlDiv = HtmlElement<Div>;
 pub type OptionList = Vec<HtmlElement<Option_>>;
 pub type DivList = Vec<HtmlDiv>;
 
-pub fn GridRow(cx: Scope) -> HtmlDiv {
-    div(cx).attr("class", "row")
+pub fn GridRow() -> HtmlDiv {
+    div().attr("class", "row")
 }
-pub fn GridRowMarginBottom(cx: Scope) -> HtmlDiv {
-    div(cx).attr("class", "row mb-2")
+pub fn GridRowMarginBottom() -> HtmlDiv {
+    div().attr("class", "row mb-2")
 }
-pub fn GridCol(cx: Scope) -> HtmlDiv {
-    div(cx).attr("class", "col")
+pub fn GridCol() -> HtmlDiv {
+    div().attr("class", "col")
 }
-pub fn GridColJustify(cx: Scope) -> HtmlDiv {
-    div(cx)
+pub fn GridColJustify() -> HtmlDiv {
+    div()
         .classes("col")
         .classes("d-flex justify-content-center")
 }
-pub fn Box(cx: Scope) -> HtmlDiv {
-    div(cx)
+pub fn Box() -> HtmlDiv {
+    div()
         .classes("border rounded")
         .style("width", "5vw")
         .style("height", "5vw")
 }
 
-pub fn CustomSelect(cx: Scope) -> HtmlElement<Select> {
-    select(cx).classes("form-select")
+pub fn CustomSelect() -> HtmlElement<Select> {
+    select().classes("form-select")
     //.style("background-color", "transparent")
     //.style("border", "none")
     //.style("border-bottom", "thin solid white")
@@ -48,39 +48,37 @@ pub fn CustomSelect(cx: Scope) -> HtmlElement<Select> {
 /// * `doc_title` - The part of the title of this option, which goes in
 /// parenthesis after the name.
 pub fn OptionWithDocTitle(
-    cx: Scope,
     current: &str,
     slug: &str,
     name: &str,
     doc_title: &str,
 ) -> HtmlElement<Option_> {
-    option(cx)
+    option()
         .prop("value", slug)
         .child(format!("{} ({})", name, doc_title))
         .prop("selected", slug == current)
 }
 
-pub fn ScrollableContainerBox(cx: Scope) -> HtmlDiv {
-    BoxedColumn(cx).style("overflow-y", "auto")
+pub fn ScrollableContainerBox() -> HtmlDiv {
+    BoxedColumn().style("overflow-y", "auto")
 }
 
-pub fn BoxedColumn(cx: Scope) -> HtmlDiv {
-    div(cx)
+pub fn BoxedColumn() -> HtmlDiv {
+    div()
         .style("height", "65vh")
         .classes("container border rounded pt-2")
 }
 
-pub fn BoxedColumnFlexible(cx: Scope) -> HtmlDiv {
-    div(cx).classes("container border rounded pt-2")
+pub fn BoxedColumnFlexible() -> HtmlDiv {
+    div().classes("container border rounded pt-2")
 }
 
 pub fn AccordionHeader(
-    cx: Scope,
     accordion_id: String,
     content: HtmlDiv,
 ) -> HtmlElement<H2> {
-    h2(cx).classes("accordion-header").child(
-        button(cx)
+    h2().classes("accordion-header").child(
+        button()
             .classes("accordion-button collapsed")
             .prop("type", "button")
             .attr("data-bs-toggle", "collapse")
@@ -91,16 +89,15 @@ pub fn AccordionHeader(
 }
 
 pub fn AccordionItem(
-    cx: Scope,
     header_content: HtmlDiv,
     dropdown_content: HtmlDiv,
 ) -> HtmlDiv {
     let id = format!("collapse-{}", Uuid::new_v4());
-    div(cx)
+    div()
         .classes("accordion-item")
-        .child(AccordionHeader(cx, id.clone(), header_content))
+        .child(AccordionHeader(id.clone(), header_content))
         .child(
-            div(cx)
+            div()
                 .id(id)
                 .classes("accordion-collapse collapse")
                 .attr("data-bs-parent", "#featuresAccordion")
@@ -108,8 +105,8 @@ pub fn AccordionItem(
         )
 }
 
-pub fn Tab(cx: Scope, id: &str, active: bool, text: &str) -> HtmlElement<Li> {
-    let mut button = button(cx)
+pub fn Tab(id: &str, active: bool, text: &str) -> HtmlElement<Li> {
+    let mut button = button()
         .classes("nav-link")
         .id(id.to_string())
         .attr("data-bs-toggle", "tab")
@@ -122,19 +119,18 @@ pub fn Tab(cx: Scope, id: &str, active: bool, text: &str) -> HtmlElement<Li> {
     if active {
         button = button.classes("active");
     }
-    li(cx)
-        .classes("nav-item")
+    li().classes("nav-item")
         .attr("role", "presentation")
         .child(button)
 }
 
-pub fn TabPanel(cx: Scope, id: &str, active: bool, child: HtmlDiv) -> HtmlDiv {
+pub fn TabPanel(id: &str, active: bool, child: HtmlDiv) -> HtmlDiv {
     let classes = if active {
         "tab-pane fade show active"
     } else {
         "tab-pane fade"
     };
-    div(cx)
+    div()
         .classes(classes)
         .id(format!("{}-pane", id))
         .attr("role", "tabpanel")
@@ -143,6 +139,6 @@ pub fn TabPanel(cx: Scope, id: &str, active: bool, child: HtmlDiv) -> HtmlDiv {
         .child(child)
 }
 
-pub fn HorizontalPanel(cx: Scope) -> HtmlDiv {
-    div(cx).classes("border rounded my-2 py-3 text-center")
+pub fn HorizontalPanel() -> HtmlDiv {
+    div().classes("border rounded my-2 py-3 text-center")
 }
