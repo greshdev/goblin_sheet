@@ -28,20 +28,16 @@ impl FuturesWrapper {
 
 /// Fetch list of species options from Open5e
 pub async fn fetch_species(_: ()) -> Vec<Species> {
-    let res = reqwasm::http::Request::get("https://api.open5e.com/v1/races/")
-        .send()
-        .await;
+    let res = reqwest::get("https://api.open5e.com/v1/races/").await;
     match res {
         Ok(response) => match response.json::<SpeciesAPI>().await {
             Ok(api) => api.results,
-            // Handle deserialization error condition
             Err(e) => {
                 log!("Could not deserialize data from Open5e to the SpeciesAPI struct!");
                 log!("{}", e);
                 vec![]
             }
         },
-        // If our request errors, return an empty list
         Err(e) => {
             log!("Error fetching species data from Open5e!");
             log!("{}", e);
@@ -52,9 +48,7 @@ pub async fn fetch_species(_: ()) -> Vec<Species> {
 
 /// Fetch list of class options from Open5e
 pub async fn fetch_classes(_: ()) -> Vec<Class> {
-    let res = reqwasm::http::Request::get("https://api.open5e.com/v1/classes/")
-        .send()
-        .await;
+    let res = reqwest::get("https://api.open5e.com/v1/classes/").await;
     match res {
         Ok(response) => match response.json::<ClassesAPI>().await {
             Ok(api) => api.results,
@@ -77,10 +71,9 @@ pub async fn fetch_classes(_: ()) -> Vec<Class> {
 /// Fetch list of background options from Open5e
 pub async fn fetch_backgrounds(_: ()) -> Vec<Background> {
     // A5e Backgrounds are harder to parse, so exclude them for now
-    let res = reqwasm::http::Request::get(
+    let res = reqwest::get(
         "https://api.open5e.com/v1/backgrounds/?document_slug__not_in=a5e",
     )
-    .send()
     .await;
     match res {
         Ok(response) => match response.json::<BackgroundsAPI>().await {
@@ -108,9 +101,7 @@ pub async fn fetch_backgrounds(_: ()) -> Vec<Background> {
 /// Fetch list of weapons  from Open5e
 pub async fn fetch_weapons(_: ()) -> Vec<Weapon> {
     // A5e Backgrounds are harder to parse, so exclude them for now
-    let res = reqwasm::http::Request::get("https://api.open5e.com/v1/weapons/")
-        .send()
-        .await;
+    let res = reqwest::get("https://api.open5e.com/v1/weapons/").await;
     match res {
         Ok(response) => match response.json::<WeaponApi>().await {
             Ok(api) => api.results,
