@@ -10,7 +10,6 @@ mod panels;
 use crate::api::FuturesWrapper;
 use crate::character_model::*;
 use crate::components::*;
-use crate::dice::roll_dice;
 use api::api_extensions::*;
 use api::api_model;
 use api::api_model::Background;
@@ -22,7 +21,6 @@ use panels::header_panel::HeaderPanel;
 use panels::proficencies_panel::ProfPanel;
 use panels::stats_panel::StatsPanel;
 
-use leptos::{component, IntoView};
 use leptos::{html::*, *};
 
 const CHAR_STORAGE_KEY: &str = "char_sheet_character";
@@ -128,7 +126,6 @@ pub struct FeaturesWrapper {
     pub optional_features: RwSignal<Vec<Feature>>,
 }
 
-#[component]
 pub fn App() -> impl IntoView {
     // Create reactive signal to store character state
     let character = create_rw_signal(load_character());

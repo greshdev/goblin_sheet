@@ -1,8 +1,6 @@
 #![allow(non_snake_case)]
 
 use crate::api::api_extensions::*;
-use crate::DivList;
-use crate::OptionList;
 
 use crate::api::api_model::Species;
 use crate::api::api_model::Subspecies;
@@ -15,11 +13,9 @@ use crate::get_current_species;
 use crate::get_subspecies;
 use crate::markdown::*;
 
-use crate::api::api_extensions::FeatureType;
 use crate::set_subspecies;
 
-use leptos::IntoView;
-use leptos::{ev, html::*, *};
+use leptos::{html::*, *};
 
 pub fn FeaturePanel(
     class_tab: HtmlDiv,

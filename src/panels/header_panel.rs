@@ -2,7 +2,7 @@ use leptos::{html::*, *};
 
 use crate::{
     api::api_model::Class, api::*, character_model::CharacterDetails,
-    components::*, OptionList,
+    components::*,
 };
 
 pub fn HeaderPanel() -> HtmlElement<Div> {

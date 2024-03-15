@@ -2,7 +2,7 @@ use leptos::{
     create_signal, create_slice, ev, event_target_value, expect_context,
     html::*, SignalSetter,
 };
-use leptos::{HtmlElement, RwSignal, Signal};
+use leptos::{RwSignal, Signal};
 
 use crate::character_model::{
     AbilityScores, AbilityScoresReactive, CharacterDetails,
