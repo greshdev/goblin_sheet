@@ -407,22 +407,22 @@ impl Background {
             hidden: false,
         });
 
-        if self.document_slug != "a5e"
-            && !self.skill_proficiencies.contains(" or ")
-        {
-            let skills = &self.skill_proficiencies;
-            for word in skills.split(',') {
-                let word = word.trim();
-                features.push(Feature {
-                    name: "Skill Proficiencies".to_string(),
-                    desc: self.skill_proficiencies.to_string(),
-                    level: 1,
-                    feature_type: FeatureType::SkillProficency(
-                        word.to_string(),
-                    ),
-                    source_slug: source_slug.to_string(),
-                    hidden: true,
-                });
+        if let Some(skill_profs) = &self.skill_proficiencies {
+            if self.document_slug != "a5e" && !skill_profs.contains(" or ") {
+                let skills = &skill_profs;
+                for word in skills.split(',') {
+                    let word = word.trim();
+                    features.push(Feature {
+                        name: "Skill Proficiencies".to_string(),
+                        desc: skill_profs.to_string(),
+                        level: 1,
+                        feature_type: FeatureType::SkillProficency(
+                            word.to_string(),
+                        ),
+                        source_slug: source_slug.to_string(),
+                        hidden: true,
+                    });
+                }
             }
         }
 

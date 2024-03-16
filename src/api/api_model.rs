@@ -169,7 +169,7 @@ pub struct Background {
     pub desc: String,
     pub slug: String,
     #[serde(rename = "skill_proficiencies")]
-    pub skill_proficiencies: String,
+    pub skill_proficiencies: Option<String>,
     #[serde(rename = "tool_proficiencies")]
     pub tool_proficiencies: Option<String>,
     pub languages: Option<String>,
