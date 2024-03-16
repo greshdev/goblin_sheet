@@ -545,6 +545,7 @@ impl Weapon {
     pub fn to_attack(&self) -> AttackAction {
         AttackAction {
             name: self.name.to_string(),
+            slug: self.name.to_string(),
             ability: if self.is_finesse() {
                 Ability::Dexterity
             } else {

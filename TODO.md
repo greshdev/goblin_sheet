@@ -1,5 +1,5 @@
 # To-do
-- [ ] Allow attacks to be removed
+- [X] Allow attacks to be removed
 - [ ] Weapon proficencies
 - [ ] Equipment manager
     - Should hook into actions tab, based on what weapons are equiped

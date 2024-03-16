@@ -308,6 +308,7 @@ impl Display for AttackType {
 #[derive(Serialize, Deserialize)]
 pub struct AttackAction {
     pub name: String,
+    pub slug: String,
     pub ability: Ability,
     pub damage_base: String,
     pub proficient: bool,

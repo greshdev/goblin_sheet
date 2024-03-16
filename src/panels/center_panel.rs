@@ -38,10 +38,9 @@ pub fn CenterPanel() -> HtmlDiv {
                     .classes("tab-content")
                     .id("featuresTabsContent")
                     .child(vec![
-                        div(),
                         TabPanel("action-tab", true, ActionsTab()),
-                        //TabPanel("species-tab", false, species_tab),
-                        //TabPanel("background-tab", false, background_tab),
+                        //TabPanel("spell-tab", true, SpellsTab()),
+                        //TabPanel("equipment-tab", true, EquipmentTab()),
                     ]),
             ),
         )
@@ -78,12 +77,29 @@ fn ActionsTab() -> HtmlDiv {
 }
 
 fn AttackActionDisplay(attack: &AttackAction) -> HtmlDiv {
+    let attack_name = attack.name.to_string();
+    let attack_slug = attack.slug.to_string();
     AccordionItem(
-        div().child(attack.name.to_string()),
-        div().inner_html(parse_markdown(&attack.generate_description(
-            get_prof_bonus(),
-            expect_context::<AbilityScoresReactive>(),
-        ))),
+        div().child(attack_name),
+        div()
+            .inner_html(parse_markdown(&attack.generate_description(
+                get_prof_bonus(),
+                expect_context::<AbilityScoresReactive>(),
+            )))
+            .child(div().style("cursor", "pointer").child("[Remove]").on(
+                ev::click,
+                move |_| {
+                    let attack_list =
+                        expect_context::<RwSignal<Vec<AttackAction>>>();
+                    attack_list.update(|current| {
+                        let idx =
+                            current.iter().position(|e| e.slug == attack_slug);
+                        if let Some(idx) = idx {
+                            current.remove(idx);
+                        }
+                    });
+                },
+            )),
     )
 }
 
@@ -136,17 +152,27 @@ fn CreateAttackForm() -> HtmlElement<Form> {
     let (damage_type, set_damage_type) = create_signal(String::new());
     let on_submit = move |e: SubmitEvent| {
         log!("Submit event called!");
+        let mut new_action = AttackAction {
+            name: name(),
+            slug: name(),
+            ability: Ability::Strength,
+            damage_base: damage_base(),
+            proficient: true,
+            attack_type: AttackType::Melee,
+            reach: reach(),
+            damage_type: damage_type(),
+        };
         attack_list.update(|list| {
+            // If an attack sharing the same slug as this attack
+            // already exists in the attack list, add a unique
+            // itendifier to the slug of this attack. Repeat
+            // until there are no duplicates.
+            while list.iter().any(|a| a.slug == new_action.slug) {
+                new_action.slug =
+                    format!("{}-{}", new_action.slug, uuid::Uuid::new_v4())
+            }
             log!("Hello from within attack list update!");
-            list.push(AttackAction {
-                name: name(),
-                ability: Ability::Strength,
-                damage_base: damage_base(),
-                proficient: true,
-                attack_type: AttackType::Melee,
-                reach: reach(),
-                damage_type: damage_type(),
-            });
+            list.push(new_action);
             log!("Attack list now contains {} items!", list.len());
         });
         // Prevent the form from "submitting" and reloading the page
