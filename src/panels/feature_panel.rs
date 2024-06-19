@@ -70,10 +70,9 @@ pub fn ClassTab() -> HtmlDiv {
 }
 
 fn FeatureDiv(f: Feature) -> HtmlDiv {
-    let f_desc = f.desc.to_string();
     let feature_display = match &f.feature_type {
         FeatureType::Option(feature_op) => {
-            RenderOptionFeature(feature_op, f_desc, &f.feature_slug())
+            RenderOptionFeature(feature_op, &f.desc, &f.feature_slug())
         }
         _ => div().inner_html(parse_markdown_table(&f.desc)),
     };
@@ -85,7 +84,7 @@ fn FeatureDiv(f: Feature) -> HtmlDiv {
 
 fn RenderOptionFeature(
     feature_op: &FeatureOptions,
-    f_desc: String,
+    f_desc: &String,
     f_slug: &String,
 ) -> HtmlDiv {
     let num_choices = feature_op.num_choices;
