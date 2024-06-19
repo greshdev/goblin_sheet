@@ -1,6 +1,7 @@
+use leptos::logging::log;
 use leptos::{
-    create_signal, create_slice, ev, event_target_value, expect_context,
-    html::*, SignalSetter,
+    create_action, create_signal, create_slice, ev, event_target_value,
+    expect_context, html::*, SignalSetter,
 };
 use leptos::{RwSignal, Signal};
 
@@ -8,7 +9,7 @@ use crate::character_model::{
     AbilityScores, AbilityScoresReactive, CharacterDetails,
 };
 use crate::components::*;
-use crate::dice::roll_dice;
+use crate::dice::get_dice_result;
 
 pub fn StatsPanel() -> HtmlElement<Div> {
     let ability_scores = expect_context::<AbilityScoresReactive>();
@@ -71,6 +72,10 @@ pub fn StatsPanel() -> HtmlElement<Div> {
             ))),
     )
 }
+struct RollDiceParams {
+    dice_string: String,
+    bonus: i64,
+}
 fn AbilityScoreBox(
     score_name: &str,
     score: Signal<i32>,
@@ -82,6 +87,19 @@ fn AbilityScoreBox(
     let (edit_mode, set_edit_mode) = create_signal(false);
     let display_score =
         move || if edit_mode() { score_base() } else { score() };
+
+    let roll_dice = create_action(|input: &RollDiceParams| {
+        // Get a copy of the input values so that we can move them into
+        // the async block below.
+        let roll_string = input.dice_string.clone();
+        let roll_bonus = input.bonus;
+        async move {
+            let r = get_dice_result(&roll_string).await;
+            if let Some(result) = r.first() {
+                log!("{}", result.value + roll_bonus)
+            }
+        }
+    });
 
     div()
         .classes("d-flex flex-column")
@@ -95,13 +113,14 @@ fn AbilityScoreBox(
                 .style("text-align", "center")
                 .style("cursor", "pointer")
                 .child(h2().child(score_mod).style("margin-top", "-10%"))
-                .on(ev::click, move |_| roll_dice(
-                    &if score_mod() > 0 {
-                        format!("1d20 + {}", score_mod())
-                    } else {
-                        "1d20".to_owned()
-                    }
-                )),
+                .on(ev::click, move |_| {
+                    roll_dice.dispatch(
+                        RollDiceParams{
+                            dice_string:"1d20".to_string(), 
+                            bonus: i64::from(score_mod()) 
+                        }
+                    )
+                }),
         )
         .child(
             input()
