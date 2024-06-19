@@ -1,10 +1,13 @@
 # To-do
 - [X] Allow attacks to be removed
-- [ ] Weapon proficencies
 - [ ] Equipment manager
+    - For the time being, maybe just have it be weapons and armor, which 
+    are available currently in Open5e API
     - Should hook into actions tab, based on what weapons are equiped
-- [ ] Spell manager
+- [ ] Weapon proficencies
+- [ ] AC (requires equipment manager)
+
 - [ ] Save button
 - [ ] Load button
-- [ ] AC (requires equipment manager)
+- [ ] Spell manager
 - [ ] Dice roller
